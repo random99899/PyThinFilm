@@ -25,6 +25,7 @@ build/
 dist/
 *.egg-info/
 
+
 # Local runtime outputs (simulation results, generated figures, exports)
 thinfilm_outputs/
 output/
