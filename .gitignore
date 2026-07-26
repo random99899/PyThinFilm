@@ -58,3 +58,9 @@ data/deg.p/_tmp_120nm_p_split/
 # Local agent config (auto-generated, not project source)
 AGENTS.md
 .agents/
+
+# Temporary doc review renders
+_doc_review_*/
+.tmp_ref_render/
+_toc_page_fix_*/
+tmp/

@@ -53,8 +53,25 @@
 
 ---
 
-## 三、 命令行与出图隔离定义
 
-1. **无交互 GUI 运行**：统一配置 `MPLBACKEND=Agg` 环境变量，禁止弹窗阻塞批量运行。
-2. **数据与图像独立输出**：所有生成的 PNG 图像均经过 Pillow 校验，像素完整且非空；配套 CSV 与 JSON 数据完整解析，不存在全 NaN 或全 Inf 异常数值列。
-3. **外部数据依赖说明**：标注 `EXPECTED_EXTERNAL_INPUT` 的 3 项案例属外部数据对比辅助脚本，缺失数据时可优雅捕获并在 summary 中标注，不抛出未捕获异常。
+
+---
+
+## 四、 外部数据案例接口规范与数据契约 (Data Contracts)
+
+对于标注为 `EXPECTED_EXTERNAL_INPUT` 的 3 项外部数据对比案例，输入 CSV 必须遵循以下数据规范契约：
+
+### 1. `tamm_interface_window_bundle` & `tamm_interface_window_scan`
+* **适用场景**：Tamm 界面物理粗糙度与层厚误差下的多特征窗口扫描；
+* **文件规格**：COMSOL 导出 2D 参数扫描导出文件（包含 `E3.csv`, `E4.csv`, `E5.csv`）；
+* **列名契约**：必须包含 `theta (rad)`, `lam/1[nm] (1)` 或 `lambda_nm`, `abs(ewfd.S11)^2 (1)`；
+* **数值规范**：波长单位为 $\text{nm}$，角度单位为 $\text{rad}$ 或 $\text{deg}$，功率反射率 $R \in [0, 1]$；
+* **极化与角度**：缺省默认为正入射或固定角度。
+
+### 2. `absorbing_surface_gain`
+* **适用场景**：微纳粗糙吸收表面相对平面基准膜系的吸收增益分析；
+* **文件规格**：双文件传入 `--rough-csv <path>` 及 `--baseline-csv <path>`；
+* **列名契约**：必须包含 `wavelength_nm`, `R`, `T`, `A`；
+* **数值规范**：波长范围建议 $300 \sim 1100\text{ nm}$，数值归一化在 $[0, 1]$ 之间；
+* **降级策略**：若文件不存在，CLI 抛出交互帮助提示并返回 Exit Code 2，外部批处理捕获标记为 `EXPECTED_EXTERNAL_INPUT`。
+
