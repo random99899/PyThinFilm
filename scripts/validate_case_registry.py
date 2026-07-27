@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage A.2).
+"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage A.2 Fix).
 
 Validates:
 1. ID uniqueness across all registered entries.
 2. Exact entry, physical case, alias, runner, and visualization target counts.
 3. Entry kind & physical case ID mapping invariants.
-4. Required JSON schema fields completeness (22 mandatory fields).
+4. Schema fields completeness (22 mandatory fields).
 5. 4-dimensional status enums validation.
 6. Calculation source & animation semantics validation.
 7. Existence of source_file paths.
@@ -48,9 +48,9 @@ REQUIRED_FIELDS = [
 ]
 
 VALID_ENTRY_KINDS = ["case", "alias", "runner"]
-VALID_GEOMETRY_STATUSES = ["GEOMETRY_READY", "GEOMETRY_MISMATCH", "PENDING_GEOMETRY"]
-VALID_PHYSICS_DATA_STATUSES = ["PHYSICS_DATA_READY", "EXTERNAL_DATA_REQUIRED", "ILLUSTRATIVE_ONLY"]
-VALID_MIGRATION_STATUSES = ["READY_FOR_MIGRATION", "PROTOTYPE_ONLY", "PENDING_ENGINE_MIGRATION"]
+VALID_GEOMETRY_STATUSES = ["GEOMETRY_READY", "GEOMETRY_MISMATCH", "PENDING_GEOMETRY", "NOT_AUDITED"]
+VALID_PHYSICS_DATA_STATUSES = ["PHYSICS_DATA_READY", "EXTERNAL_DATA_REQUIRED", "ILLUSTRATIVE_ONLY", "NOT_AUDITED"]
+VALID_MIGRATION_STATUSES = ["READY_FOR_MIGRATION", "PROTOTYPE_ONLY", "PENDING_ENGINE_MIGRATION", "BLOCKED"]
 VALID_CONFLICT_STATUSES = [
     "NONE",
     "EXTERNAL_CSV_MISSING",
@@ -72,7 +72,7 @@ def validate_registry():
     cases = data.get("cases", [])
 
     print("=" * 65)
-    print("PyThinFilm 3D Case Registry Semantic Closure Audit (Stage A.2)")
+    print("PyThinFilm 3D Case Registry Evidence Audit (Stage A.2 Reset)")
     print("=" * 65)
 
     # 1. Entry Count Checks
@@ -80,20 +80,17 @@ def validate_registry():
     case_ids = [c["id"] for c in cases]
     unique_ids = set(case_ids)
 
-    print(f"Registry Entry Count:          {registry_entry_count}")
-    print(f"Unique Entry IDs:              {len(unique_ids)}")
-
     if len(case_ids) != len(unique_ids):
         duplicates = [x for x in case_ids if case_ids.count(x) > 1]
         print(f"[FAIL] Duplicate Case IDs found: {set(duplicates)}")
         sys.exit(1)
 
-    # Entry Kind breakdown
+    # Filter out runner entries from independent geometry & visualization scenes
+    non_runner_cases = [c for c in cases if c.get("entry_kind") != "runner"]
     physical_cases = [c for c in cases if c.get("entry_kind") == "case"]
     alias_entries = [c for c in cases if c.get("entry_kind") == "alias"]
     runner_entries = [c for c in cases if c.get("entry_kind") == "runner"]
 
-    physical_case_ids = set(c["physical_case_id"] for c in cases if c.get("entry_kind") == "case")
     visualization_targets = set(c["physical_case_id"] for c in cases)
 
     physical_case_count = len(physical_cases)
@@ -101,6 +98,8 @@ def validate_registry():
     runner_entry_count = len(runner_entries)
     visualization_target_count = len(visualization_targets)
 
+    print(f"Registry Entry Count:          {registry_entry_count}")
+    print(f"Unique Entry IDs:              {len(unique_ids)}")
     print(f"Physical Case Count:           {physical_case_count}")
     print(f"Alias Entry Count:             {alias_entry_count}")
     print(f"Runner Entry Count:            {runner_entry_count}")
@@ -109,30 +108,42 @@ def validate_registry():
     # Exact expected count assertions
     assert registry_entry_count == 41, f"Expected 41 registry entries, got {registry_entry_count}"
     assert physical_case_count == 40, f"Expected 40 physical cases, got {physical_case_count}"
-    assert alias_entry_count == 0, f"Expected 0 alias entries (narrowband_filter confirmed distinct case), got {alias_entry_count}"
+    assert alias_entry_count == 0, f"Expected 0 alias entries, got {alias_entry_count}"
     assert runner_entry_count == 1, f"Expected 1 runner entry (guided_grating_demo), got {runner_entry_count}"
     assert visualization_target_count == 40, f"Expected 40 visualization targets, got {visualization_target_count}"
     print("[PASS] Entry Count Assertions PASSED (41 entries, 40 physical cases, 0 alias, 1 runner, 40 targets).")
 
-    # 2. Status Dimension Metrics Breakdown
-    geometry_ready_count = sum(1 for c in cases if c.get("geometry_status") == "GEOMETRY_READY")
-    geometry_mismatch_count = sum(1 for c in cases if c.get("geometry_status") == "GEOMETRY_MISMATCH")
+    # 2. Status Dimension Metrics Breakdown (excluding runners from independent geometry scenes)
+    geometry_ready_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "GEOMETRY_READY")
+    geometry_mismatch_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "GEOMETRY_MISMATCH")
+    geometry_not_audited_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "NOT_AUDITED")
+
     physics_data_ready_count = sum(1 for c in cases if c.get("physics_data_status") == "PHYSICS_DATA_READY")
     illustrative_only_count = sum(1 for c in cases if c.get("physics_data_status") == "ILLUSTRATIVE_ONLY")
+    external_data_required_count = sum(1 for c in cases if c.get("physics_data_status") == "EXTERNAL_DATA_REQUIRED")
+
     ready_for_migration_count = sum(1 for c in cases if c.get("migration_status") == "READY_FOR_MIGRATION")
     prototype_only_count = sum(1 for c in cases if c.get("migration_status") == "PROTOTYPE_ONLY")
-    external_data_required_count = sum(1 for c in cases if c.get("physics_data_status") == "EXTERNAL_DATA_REQUIRED")
-    blocked_count = sum(1 for c in cases if c.get("migration_status") == "BLOCKED")
+    pending_migration_count = sum(1 for c in cases if c.get("migration_status") == "PENDING_ENGINE_MIGRATION")
 
-    print("\nDetailed Status Metrics Breakdown:")
-    print(f"  - geometry_ready_count:        {geometry_ready_count}")
-    print(f"  - geometry_mismatch_count:     {geometry_mismatch_count}")
-    print(f"  - physics_data_ready_count:    {physics_data_ready_count}")
-    print(f"  - illustrative_only_count:     {illustrative_only_count}")
-    print(f"  - ready_for_migration_count:   {ready_for_migration_count}")
-    print(f"  - prototype_only_count:        {prototype_only_count}")
-    print(f"  - external_data_required_count:{external_data_required_count}")
-    print(f"  - blocked_count:               {blocked_count}")
+    python_passed_count = sum(1 for c in cases if c.get("python_reference_comparison") == "PASSED")
+    python_not_run_count = sum(1 for c in cases if c.get("python_reference_comparison") == "NOT_RUN")
+
+    print("\nEvidence-Backed Status Metrics Breakdown:")
+    print(f"  - geometry_ready_count (excl. runner): {geometry_ready_count}")
+    print(f"  - geometry_mismatch_count:             {geometry_mismatch_count}")
+    print(f"  - geometry_not_audited_count:          {geometry_not_audited_count}")
+    print(f"  - physics_data_ready_count:            {physics_data_ready_count}")
+    print(f"  - illustrative_only_count:             {illustrative_only_count}")
+    print(f"  - external_data_required_count:        {external_data_required_count}")
+    print(f"  - ready_for_migration_count:           {ready_for_migration_count}")
+    print(f"  - prototype_only_count:                {prototype_only_count}")
+    print(f"  - pending_engine_migration_count:      {pending_migration_count}")
+    print(f"  - python_reference_passed_count:       {python_passed_count}")
+    print(f"  - python_reference_not_run_count:      {python_not_run_count}")
+
+    # Assert no unverified PASSED status
+    assert python_passed_count == 0, f"Expected 0 python_reference_comparison PASSED until point-by-point error report is generated, got {python_passed_count}"
 
     # 3. Schema Completeness & File Existence Check
     errors = []

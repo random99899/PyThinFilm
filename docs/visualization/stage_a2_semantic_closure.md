@@ -1,93 +1,56 @@
-# PyThinFilm 全案例 3D 动态可视化 — Stage A.2 语义收口与物理案例映射报告
+# PyThinFilm 全案例 3D 动态可视化 — Stage A.2 语义与证据状态修正报告
 
-本报告响应《Stage A.2 最终语义修正》指令，完成对 3D 案例注册表、校验器与归档文档的语义收口，精确划分了案例条目类型（`entry_kind`）、物理案例映射（`physical_case_id`）与 4 维独立状态评估，补齐了计算来源与动画语义属性。
-
----
-
-## 一、 实体类型与物理案例映射演算 (Entry Kind & Physical Case Mapping)
-
-经过对 `thinfilm/education.py:L280-295` 的代码证据查验，确认 `narrowband_filter` 拥有独立设置参数（`periods = 5`，即两侧各 5 周期 DBR 高阶反射镜，不同于 `fp_filter` 的 4 周期），属于独立的物理案例，而非单纯别名。
-
-因此，注册表映射关系如下：
-* **`guided_grating_demo`**：`entry_kind` = `"runner"`, `physical_case_id` = `"guided_grating_emt"`；
-* **其余 40 项案例**（包含 `narrowband_filter`）：`entry_kind` = `"case"`, `physical_case_id` = `<自身 ID>`。
-
-### 精确数据统计指标
-1. `registry_entry_count` = **41**
-2. `physical_case_count` = **40**
-3. `alias_entry_count` = **0**
-4. `runner_entry_count` = **1**
-5. `visualization_target_count` = **40**
+本报告响应《Stage A.2 证据状态修正》指令，清除了未经验证的批量 `PASSED` 与 `GEOMETRY_READY` 赋值，按代码与原型事实重置了状态与比较日志，并排除了 Runner 入口对几何就绪场景计数的污染。
 
 ---
 
-## 二、 多维状态统计拆解 (Detailed Status Metrics)
+## 一、 核心修正：消除无证据的状态赋值
 
-取消把多个维度混为单一状态的旧模式，在注册表中为所有 41 项条目提供 4 个独立状态维度：
+1. **未核查案例状态重置**：
+   * 所有未进行逐案例几何/物理对照的案例，默认重置为：
+     * `geometry_status` = `"NOT_AUDITED"`
+     * `physics_data_status` = `"NOT_AUDITED"`
+     * `python_reference_comparison` = `"NOT_RUN"`
+     * `migration_status` = `"PENDING_ENGINE_MIGRATION"`
+   * 结果：`python_reference_passed_count` 归零 (**0**)，防止未经逐点对照的数值误标为 `PASSED`。
 
-1. **`geometry_ready_count`** = **40**
-2. **`geometry_mismatch_count`** = **1**（`fp_filter_3d` 原型：原型采用 3 周期 `Air/(LH)^3 D (HL)^3/Glass` 几何，而 Python 官方 `fp_filter` 使用 4 周期 `Air/(HL)^4 2L (LH)^4/Glass`）
-3. **`physics_data_ready_count`** = **34**
-4. **`illustrative_only_count`** = **1**（`tamm_state_3d` 原型：未绑定 Python 导出结果 json 前为教学示意模式）
-5. **`ready_for_migration_count`** = **2**（`single_ar_3d`, `bragg_reflector_3d`）
-6. **`prototype_only_count`** = **2**（`fp_filter_3d`, `tamm_state_3d`）
-7. **`external_data_required_count`** = **6**（依赖桌面外部 CSV 数据脚本）
-8. **`blocked_count`** = **0**
+2. **Runner 条目解耦**：
+   * `guided_grating_demo`（`entry_kind = "runner"`）复用 `guided_grating_emt` 的场景，不再作为独立“几何就绪场景”重复计数。
 
----
-
-## 三、 四个已有 Three.js 原型的计算来源与动画语义审查
-
-针对 `C:\Users\L2791\Downloads\visualizations` 目录下的 4 个原型进行多维属性归纳：
-
-| 原型 ID / 案例 ID | 计算来源 (`calculation_source`) | Python 对照 (`python_reference_comparison`) | 动画语义 (`animation_semantics`) | 几何状态 | 物理数据状态 | 迁移状态 | 冲突状态 |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `single_ar_3d` (`single_ar`) | `frontend_reimplementation` | `PASSED` | `PHYSICS_DRIVEN` | `GEOMETRY_READY` | `PHYSICS_DATA_READY` | `READY_FOR_MIGRATION` | `NONE` |
-| `bragg_reflector_3d` (`bragg_reflector`) | `frontend_reimplementation` | `PASSED` | `PHYSICS_DRIVEN` | `GEOMETRY_READY` | `PHYSICS_DATA_READY` | `READY_FOR_MIGRATION` | `NONE` |
-| `fp_filter_3d` (`fp_filter`) | `frontend_reimplementation` | `PASSED` | `PHYSICS_DRIVEN` | `GEOMETRY_MISMATCH` | `PHYSICS_DATA_READY` | `PROTOTYPE_ONLY` | `PROTOTYPE_GEOMETRY_MISMATCH` |
-| `tamm_state_3d` (`tamm_phase_bundle`) | `illustrative_only` | `NOT_RUN` | `TEACHING_ILLUSTRATION` | `GEOMETRY_READY` | `ILLUSTRATIVE_ONLY` | `PROTOTYPE_ONLY` | `NONE` |
+3. **四个 Three.js 原型状态重置**：
+   * **`single_ar`**：`geometry_status` = `GEOMETRY_READY`, `migration_status` = `READY_FOR_MIGRATION`, `python_reference_comparison` = `NOT_RUN`；
+   * **`bragg_reflector`**：`geometry_status` = `GEOMETRY_READY`, `migration_status` = `READY_FOR_MIGRATION`, `python_reference_comparison` = `NOT_RUN`；
+   * **`fp_filter`**：`geometry_status` = `GEOMETRY_MISMATCH` (原型 3 周期 vs 官方 4 周期), `migration_status` = `PROTOTYPE_ONLY`, `conflict_status` = `PROTOTYPE_GEOMETRY_MISMATCH`, `python_reference_comparison` = `NOT_RUN`；
+   * **`tamm_phase_bundle`**：`geometry_status` = `GEOMETRY_READY`, `physics_data_status` = `ILLUSTRATIVE_ONLY`, `calculation_source` = `illustrative_only`, `migration_status` = `PROTOTYPE_ONLY`, `python_reference_comparison` = `NOT_RUN`。
 
 ---
 
-## 四、 自动化校验与回归测试执行日志
+## 二、 证据驱动的状态统计拆解 (Evidence-Backed Metrics)
 
-1. **注册表校验脚本 (`scripts/validate_case_registry.py`)**：
-   ```text
-   =================================================================
-   PyThinFilm 3D Case Registry Semantic Closure Audit (Stage A.2)
-   =================================================================
-   Registry Entry Count:          41
-   Unique Entry IDs:              41
-   Physical Case Count:           40
-   Alias Entry Count:             0
-   Runner Entry Count:            1
-   Visualization Target Count:    40
-   [PASS] Entry Count Assertions PASSED (41 entries, 40 physical cases, 0 alias, 1 runner, 40 targets).
+经过 `scripts/validate_case_registry.py` 自动化核验，结果如下：
 
-   Detailed Status Metrics Breakdown:
-     - geometry_ready_count:        40
-     - geometry_mismatch_count:     1
-     - physics_data_ready_count:    34
-     - illustrative_only_count:     1
-     - ready_for_migration_count:   2
-     - prototype_only_count:        2
-     - external_data_required_count:6
-     - blocked_count:               0
-
-   [PASS] All Schema, Field Completeness & Status Enum Checks PASSED.
-   =================================================================
-   ```
-
-2. **JSON 语法规范校验**：
-   `py -m json.tool web3d/data/case_registry.json > $null` $\to$ **Exit Code 0**
-
-3. **Pytest 全量回归测试**：
-   `py -m pytest tests/ -q` $\to$ **`334 passed, 0 failed in 5.62s`**
+| 统计指标 | 真实数量 | 备注与事实依据 |
+| :--- | :---: | :--- |
+| **`registry_entry_count`** | **41** | 注册表全量条目总数 |
+| **`physical_case_count`** | **40** | 物理独立案例总数 (`narrowband_filter` 具 5 周期独立参数) |
+| **`alias_entry_count`** | **0** | 0 项别名条目 |
+| **`runner_entry_count`** | **1** | `guided_grating_demo`（非教学 Runner 入口） |
+| **`visualization_target_count`** | **40** | 独立 3D 渲染目标场景总数 |
+| **`geometry_ready_count` (excl. runner)** | **3** | 仅核对过的 3 个原型 (`single_ar`, `bragg_reflector`, `tamm`) |
+| **`geometry_mismatch_count`** | **1** | `fp_filter` (原型 3 周期 vs 官方 4 周期) |
+| **`geometry_not_audited_count`** | **36** | 未完成逐案例 3D 几何核查的案例 |
+| **`physics_data_ready_count`** | **3** | `single_ar`, `bragg_reflector`, `fp_filter` 具备计算数据 |
+| **`illustrative_only_count`** | **1** | `tamm_phase_bundle`（原型教学示意） |
+| **`external_data_required_count`** | **6** | 需桌面外部 CSV 数据脚本 |
+| **`ready_for_migration_count`** | **2** | 仅 `single_ar` 与 `bragg_reflector` |
+| **`prototype_only_count`** | **2** | `fp_filter` (结构失配) 与 `tamm_phase_bundle` (数据示意) |
+| **`pending_engine_migration_count`** | **37** | 待统一引擎 Stage B.0 搭建后接入 |
+| **`python_reference_passed_count`** | **0** | **0 项**（严禁在无逐点误差比较报告前标记 PASSED） |
+| **`python_reference_not_run_count`** | **41** | 全部 41 项均标注为 NOT_RUN |
 
 ---
 
-## 五、 Git 提交信息
+## 三、 Git 提交与固化
 
 * **Git Branch**：`national/v1.1-dev`
-* **Stage A.2 提交号**：待提交固化
-* **Commit Message**：`fix(web3d): close Stage A registry semantics and physical-case mapping`
+* **Commit Message**：`fix(web3d): remove unverified ready and comparison statuses`
