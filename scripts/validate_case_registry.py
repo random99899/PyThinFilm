@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage A.1).
+"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage A.2).
 
 Validates:
-1. ID uniqueness across all categories.
-2. Exact case count reconciliation.
-3. Required JSON schema fields completeness.
-4. Status enum validity.
-5. Existence of source_file paths.
+1. ID uniqueness across all registered entries.
+2. Exact entry, physical case, alias, runner, and visualization target counts.
+3. Entry kind & physical case ID mapping invariants.
+4. Required JSON schema fields completeness (22 mandatory fields).
+5. 4-dimensional status enums validation.
+6. Calculation source & animation semantics validation.
+7. Existence of source_file paths.
 """
 
 from __future__ import annotations
@@ -20,11 +22,12 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-# Required fields for web3d/data/case_registry.json schema
 REQUIRED_FIELDS = [
     "id",
     "display_name",
     "category",
+    "entry_kind",
+    "physical_case_id",
     "source_file",
     "source_symbol",
     "physics_model",
@@ -34,28 +37,29 @@ REQUIRED_FIELDS = [
     "polarization_support",
     "visualization_template",
     "data_dependencies",
-    "evidence_status",
+    "geometry_status",
+    "physics_data_status",
+    "migration_status",
     "conflict_status",
+    "calculation_source",
+    "python_reference_comparison",
+    "animation_semantics",
     "notes",
 ]
 
-# Valid status enums for evidence_status
-VALID_EVIDENCE_STATUSES = [
-    "STRUCTURE_READY",
-    "PHYSICS_DATA_READY",
-    "EXTERNAL_DATA_REQUIRED",
-    "VISUALIZATION_DEGRADED_MODE",
-    "BLOCKED",
-    "PROTOTYPE_EXIST",
-]
-
-# Valid status enums for conflict_status
+VALID_ENTRY_KINDS = ["case", "alias", "runner"]
+VALID_GEOMETRY_STATUSES = ["GEOMETRY_READY", "GEOMETRY_MISMATCH", "PENDING_GEOMETRY"]
+VALID_PHYSICS_DATA_STATUSES = ["PHYSICS_DATA_READY", "EXTERNAL_DATA_REQUIRED", "ILLUSTRATIVE_ONLY"]
+VALID_MIGRATION_STATUSES = ["READY_FOR_MIGRATION", "PROTOTYPE_ONLY", "PENDING_ENGINE_MIGRATION"]
 VALID_CONFLICT_STATUSES = [
     "NONE",
     "EXTERNAL_CSV_MISSING",
     "HARDCODED_PATH_DEPENDENCY",
-    "PROTOTYPE_SIMULATION_DISCREPANCY",
+    "PROTOTYPE_GEOMETRY_MISMATCH",
 ]
+VALID_CALC_SOURCES = ["python_export", "frontend_reimplementation", "hardcoded", "illustrative_only"]
+VALID_PYTHON_COMPARISONS = ["PASSED", "FAILED", "NOT_RUN"]
+VALID_ANIMATION_SEMANTICS = ["PHYSICS_DRIVEN", "TEACHING_ILLUSTRATION", "MIXED"]
 
 
 def validate_registry():
@@ -67,31 +71,68 @@ def validate_registry():
     data = json.loads(registry_path.read_text(encoding="utf-8"))
     cases = data.get("cases", [])
 
-    print("=" * 60)
-    print("PyThinFilm 3D Case Registry Reconciliation Audit")
-    print("=" * 60)
+    print("=" * 65)
+    print("PyThinFilm 3D Case Registry Semantic Closure Audit (Stage A.2)")
+    print("=" * 65)
 
-    # 1. ID Uniqueness Check
+    # 1. Entry Count Checks
+    registry_entry_count = len(cases)
     case_ids = [c["id"] for c in cases]
     unique_ids = set(case_ids)
-    print(f"Total Registered Cases: {len(cases)}")
-    print(f"Unique Case IDs:       {len(unique_ids)}")
+
+    print(f"Registry Entry Count:          {registry_entry_count}")
+    print(f"Unique Entry IDs:              {len(unique_ids)}")
+
     if len(case_ids) != len(unique_ids):
         duplicates = [x for x in case_ids if case_ids.count(x) > 1]
-        print(f"ERROR: Duplicate Case IDs found: {set(duplicates)}")
+        print(f"[FAIL] Duplicate Case IDs found: {set(duplicates)}")
         sys.exit(1)
-    else:
-        print("[PASS] Case ID Uniqueness Check PASSED.")
 
-    # 2. Category Counts & Deduplication Math
-    cats = {}
-    for c in cases:
-        cat = c.get("category", "unknown")
-        cats[cat] = cats.get(cat, 0) + 1
+    # Entry Kind breakdown
+    physical_cases = [c for c in cases if c.get("entry_kind") == "case"]
+    alias_entries = [c for c in cases if c.get("entry_kind") == "alias"]
+    runner_entries = [c for c in cases if c.get("entry_kind") == "runner"]
 
-    print("\nCategory Breakdown:")
-    for cat, count in sorted(cats.items()):
-        print(f"  - {cat:<25}: {count} cases")
+    physical_case_ids = set(c["physical_case_id"] for c in cases if c.get("entry_kind") == "case")
+    visualization_targets = set(c["physical_case_id"] for c in cases)
+
+    physical_case_count = len(physical_cases)
+    alias_entry_count = len(alias_entries)
+    runner_entry_count = len(runner_entries)
+    visualization_target_count = len(visualization_targets)
+
+    print(f"Physical Case Count:           {physical_case_count}")
+    print(f"Alias Entry Count:             {alias_entry_count}")
+    print(f"Runner Entry Count:            {runner_entry_count}")
+    print(f"Visualization Target Count:    {visualization_target_count}")
+
+    # Exact expected count assertions
+    assert registry_entry_count == 41, f"Expected 41 registry entries, got {registry_entry_count}"
+    assert physical_case_count == 40, f"Expected 40 physical cases, got {physical_case_count}"
+    assert alias_entry_count == 0, f"Expected 0 alias entries (narrowband_filter confirmed distinct case), got {alias_entry_count}"
+    assert runner_entry_count == 1, f"Expected 1 runner entry (guided_grating_demo), got {runner_entry_count}"
+    assert visualization_target_count == 40, f"Expected 40 visualization targets, got {visualization_target_count}"
+    print("[PASS] Entry Count Assertions PASSED (41 entries, 40 physical cases, 0 alias, 1 runner, 40 targets).")
+
+    # 2. Status Dimension Metrics Breakdown
+    geometry_ready_count = sum(1 for c in cases if c.get("geometry_status") == "GEOMETRY_READY")
+    geometry_mismatch_count = sum(1 for c in cases if c.get("geometry_status") == "GEOMETRY_MISMATCH")
+    physics_data_ready_count = sum(1 for c in cases if c.get("physics_data_status") == "PHYSICS_DATA_READY")
+    illustrative_only_count = sum(1 for c in cases if c.get("physics_data_status") == "ILLUSTRATIVE_ONLY")
+    ready_for_migration_count = sum(1 for c in cases if c.get("migration_status") == "READY_FOR_MIGRATION")
+    prototype_only_count = sum(1 for c in cases if c.get("migration_status") == "PROTOTYPE_ONLY")
+    external_data_required_count = sum(1 for c in cases if c.get("physics_data_status") == "EXTERNAL_DATA_REQUIRED")
+    blocked_count = sum(1 for c in cases if c.get("migration_status") == "BLOCKED")
+
+    print("\nDetailed Status Metrics Breakdown:")
+    print(f"  - geometry_ready_count:        {geometry_ready_count}")
+    print(f"  - geometry_mismatch_count:     {geometry_mismatch_count}")
+    print(f"  - physics_data_ready_count:    {physics_data_ready_count}")
+    print(f"  - illustrative_only_count:     {illustrative_only_count}")
+    print(f"  - ready_for_migration_count:   {ready_for_migration_count}")
+    print(f"  - prototype_only_count:        {prototype_only_count}")
+    print(f"  - external_data_required_count:{external_data_required_count}")
+    print(f"  - blocked_count:               {blocked_count}")
 
     # 3. Schema Completeness & File Existence Check
     errors = []
@@ -99,19 +140,29 @@ def validate_registry():
 
     for idx, c in enumerate(cases):
         cid = c.get("id", f"INDEX_{idx}")
+
         # Field completeness
         for field in REQUIRED_FIELDS:
             if field not in c or c[field] is None or str(c[field]).strip() == "":
                 errors.append(f"Case '{cid}' missing required field: '{field}'")
 
         # Enum checks
-        ev_status = c.get("evidence_status")
-        if ev_status not in VALID_EVIDENCE_STATUSES:
-            errors.append(f"Case '{cid}' has invalid evidence_status: '{ev_status}'")
-
-        conf_status = c.get("conflict_status")
-        if conf_status not in VALID_CONFLICT_STATUSES:
-            errors.append(f"Case '{cid}' has invalid conflict_status: '{conf_status}'")
+        if c.get("entry_kind") not in VALID_ENTRY_KINDS:
+            errors.append(f"Case '{cid}' invalid entry_kind: {c.get('entry_kind')}")
+        if c.get("geometry_status") not in VALID_GEOMETRY_STATUSES:
+            errors.append(f"Case '{cid}' invalid geometry_status: {c.get('geometry_status')}")
+        if c.get("physics_data_status") not in VALID_PHYSICS_DATA_STATUSES:
+            errors.append(f"Case '{cid}' invalid physics_data_status: {c.get('physics_data_status')}")
+        if c.get("migration_status") not in VALID_MIGRATION_STATUSES:
+            errors.append(f"Case '{cid}' invalid migration_status: {c.get('migration_status')}")
+        if c.get("conflict_status") not in VALID_CONFLICT_STATUSES:
+            errors.append(f"Case '{cid}' invalid conflict_status: {c.get('conflict_status')}")
+        if c.get("calculation_source") not in VALID_CALC_SOURCES:
+            errors.append(f"Case '{cid}' invalid calculation_source: {c.get('calculation_source')}")
+        if c.get("python_reference_comparison") not in VALID_PYTHON_COMPARISONS:
+            errors.append(f"Case '{cid}' invalid python_reference_comparison: {c.get('python_reference_comparison')}")
+        if c.get("animation_semantics") not in VALID_ANIMATION_SEMANTICS:
+            errors.append(f"Case '{cid}' invalid animation_semantics: {c.get('animation_semantics')}")
 
         # Source file check
         src = c.get("source_file", "").split(":")[0]
@@ -129,15 +180,9 @@ def validate_registry():
             print(f"  - {err}")
         sys.exit(1)
     else:
-        print("\n[PASS] Schema Completeness & Enum Validation PASSED.")
+        print("\n[PASS] All Schema, Field Completeness & Status Enum Checks PASSED.")
 
-    print("\nReconciliation Summary:")
-    print(f"  - Total Unique Cases Registered: {len(cases)}")
-    print(f"  - Prototype Aligned:             {data.get('prototype_aligned_cases', 0)}")
-    print(f"  - Structure Ready:               {sum(1 for c in cases if c.get('evidence_status') == 'STRUCTURE_READY')}")
-    print(f"  - External Data Required:        {sum(1 for c in cases if c.get('evidence_status') == 'EXTERNAL_DATA_REQUIRED')}")
-
-    print("=" * 60)
+    print("=" * 65)
 
 
 if __name__ == "__main__":

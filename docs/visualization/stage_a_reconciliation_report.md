@@ -23,8 +23,9 @@
 
 ### 2. 算术公式与全量唯一 ID 集合
 $$\text{全量唯一 ID 集合 } \text{final\_unique\_case\_ids} = 18 + 1 + 5 + 16 + 1 = \mathbf{41\text{ 项}}$$
-* **物理唯一案例数**：**40 项**（`guided_grating_emt` 与 `guided_grating_demo` 共享同一套 1D 亚波长光栅 EMT 物理模型；`narrowband_filter` 属于 `fp_filter` 的教学别名）。
-* **注册表条目总数**：**41 项**（100% 包含全仓库所有例程、别名与 Runner 入口，做到无漏项、无未对账盲区）。
+* **物理唯一案例数**：**40 项**（`narrowband_filter` 在 `thinfilm/education.py:L280` 中拥有 `periods=5` 独立参数；`guided_grating_demo` 作为 `guided_grating_emt` 的 Runner 入口）。
+* **注册表条目总数**：**41 项**（100% 覆盖全仓库所有例程与 Runner 入口）。
+* **条目类型划分**：`case`: 40, `alias`: 0, `runner`: 1 (`guided_grating_demo`)。
 
 ---
 
