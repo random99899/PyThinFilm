@@ -1,123 +1,99 @@
-# PyThinFilm 全案例 3D 可视化注册表与设计文档 (Stage A)
+# PyThinFilm 全案例 3D 可视化注册表与设计文档 (Stage A.1 纠偏版)
 
-本文档记录 PyThinFilm 代码库中全部 **39 项有效案例** 的 3D 可视化注册表、4 项已有 Three.js 原型对齐情况、8 大可复用物理渲染模板映射以及参数冲突与边界审查结果。
+本文档记录 PyThinFilm 代码库中全部 **41 项注册案例（40 项物理唯一案例 + 1 项别名/Runner 入口）** 的 3D 可视化注册表、4 项已有 Three.js 原型多维状态评估、8 大可复用物理渲染模板映射以及参数冲突与证据状态。
 
 ---
 
-## 一、 统计概览
+## 一、 统计概览与集合对账 (Reconciliation Summary)
 
-* **全量有效案例总数**：**39 项**
+* **注册表总条目数**：**41 项**
+* **物理唯一案例数**：**40 项**
+* **分类精确拆解 (Sum = 41)**：
+  1. 经典薄膜教学案例 (`teaching_thinfilm`)：**18 项**
+  2. 亚波长光栅 EMT 教学案例 (`teaching_emt`)：**1 项**（`guided_grating_emt`，主展示 3）
+  3. TMM 工程应用案例 (`engineering_applications`)：**5 项**
+  4. 真实材料与拓展研究案例 (`research_extension`)：**16 项**
+  5. 非教学 Runner 入口 (`non_teaching_runner`)：**1 项**（`guided_grating_demo`，映射至 `guided_grating_emt`）
 * **已有 3D 原型对齐**：**4 项** (`single_ar`, `bragg_reflector`, `fp_filter`, `tamm_phase_bundle`)
-* **3D 可视化就绪案例 (READY)**：**29 项**
-* **需确认冲突案例 (CONFLICT_REQUIRES_CONFIRMATION)**：**6 项**（依赖外部桌面 CSV 数据的扩展分析脚本）
+* **物理数据准备就绪 (`PHYSICS_DATA_READY`)**：**31 项**
+* **需外部数据 (`EXTERNAL_DATA_REQUIRED`)**：**6 项**
 
 ---
 
-## 二、 4 项已有 3D 原型与案例 ID 映射
+## 二、 4 项已有 3D 原型多维状态评估 (Prototype Multi-Dimensional Status)
 
-来自原 `visualizations/` 目录的 4 个独立 Vite/Three.js 原型已与仓库核心 `case_id` 完成精确对齐：
+来自 `visualizations/` 目录的 4 个独立 Vite/Three.js 原型，经 4 维独立核查评估如下：
 
-1. **Prototype 1 (`single_ar_3d`)** $\to$ `case_id: "single_ar"`
-   * **物理机制**：单层增透膜，薄膜界面反射相消干涉；
-   * **功能映射**：立体视角、剖面视角、膜层展开、斜入射、TE/TM 偏振电场矢量、导纳轨迹图。
-2. **Prototype 2 (`bragg_reflector_3d`)** $\to$ `case_id: "bragg_reflector"`
-   * **物理机制**：分布式布拉格反射镜 (DBR)，周期性高低折射率界面同相反射叠加形成带隙；
-   * **功能映射**：周期层数 $N$ 调整、带隙随着周期数增加扩展、多界面同相反射指示。
-3. **Prototype 3 (`fp_filter_3d`)** $\to$ `case_id: "fp_filter"`
-   * **物理机制**：Fabry–Pérot 腔窄带透射滤光片，两侧 DBR 结合中央 $2L$ 半波缺陷腔形成强共振选频透射；
-   * **功能映射**：腔内光场多次往返相长干涉、极窄透射峰展示。
-4. **Prototype 4 (`tamm_state_3d`)** $\to$ `case_id: "tamm_phase_bundle"`
-   * **物理机制**：Tamm 界面态，金属层 ($30\text{ nm Ag}$) 与 DBR 界面反射相位匹配 ($\phi_{\text{DBR}} + \phi_{\text{metal}} \equiv 0$)；
-   * **功能映射**：金属/DBR 接触面强界面局域电场、两端呈指数/带隙衰减。
+1. **`single_ar_3d` ($\to$ `single_ar`)**：
+   * 45° 斜入射支持：**YES** | TE/TM 偏振支持：**YES** | 真实计算：**YES** | 动画示意：**YES**
+   * 评估结论：**`READY_FOR_MIGRATION`**（可直接迁移至统一引擎）。
+2. **`bragg_reflector_3d` ($\to$ `bragg_reflector`)**：
+   * 45° 斜入射支持：**YES** | TE/TM 偏振支持：**YES** | 真实计算：**YES** | 动画示意：**YES**
+   * 评估结论：**`READY_FOR_MIGRATION`**（周期层展开几何无缝）。
+3. **`fp_filter_3d` ($\to$ `fp_filter`)**：
+   * 45° 斜入射支持：**YES** | TE/TM 偏振支持：**YES** | 真实计算：**YES** | 动画示意：**YES**
+   * 评估结论：**`READY_FOR_MIGRATION`**（已确认采用 $(HL)^4 2L (LH)^4$ 修正对称腔体）。
+4. **`tamm_state_3d` ($\to$ `tamm_phase_bundle`)**：
+   * 45° 斜入射支持：**NO** (仅正入射) | TE/TM 偏振支持：**YES** | 真实计算：**PARTIAL** (界面局域场需绑定 Python json) | 动画示意：**YES**
+   * 评估结论：**`GEOMETRY_VERIFIED`**（具备迁移条件，但须绑定 Python 导出 json，不得伪装为前端实时求解）。
 
 ---
 
 ## 三、 8 大可复用物理渲染模板 (Physical Templates)
 
-为了避免为每个案例复制代码，前端 3D 系统采用“**一个统一渲染器 + 八大物理模板 + JSON 驱动**”的统一架构：
-
-1. **`single-interface` (单界面/少层干涉模板)**：
-   * 适用于单层、双层、三层及镜头增透膜。
-   * 支持斜入射折射、第一/第二界面反射叠加、TE/TM 电场动画。
-2. **`periodic-stack` (周期多层膜模板)**：
-   * 适用于 DBR、QW 膜堆、高反镜及 Rugate 褶皱滤光片。
-   * 支持周期层展开、多界面反射相长叠加示意、带隙随着周期数收敛。
-3. **`defect-cavity` (缺陷腔模板)**：
-   * 适用于 F-P 单半波、双半波及窄带通信滤光片。
-   * 支持腔内多次往返谐振光路、高 Q 值透射峰与腔内场积累。
-4. **`metal-dbr-interface` (金属/DBR 界面模板)**：
-   * 适用于 Tamm 界面态偏振筛选、相位聚焦与共振吸收。
-   * 支持金属侧趋肤深度衰减、DBR 侧带隙衰减及界面相位匹配点标识。
-5. **`absorber-stack` (吸收与有损介质模板)**：
-   * 适用于多层吸收表面、有损干涉结构。
-   * 支持层内坡印廷矢量与能量吸收衰减示意。
-6. **`spectral-weighting` (光谱加权与选择性辐射模板)**：
-   * 适用于 PDRC 被动辐射制冷。
-   * 支持 3D 膜系结构与 2D 太阳光谱/大气红外窗口加权曲线联动。
-7. **`engineering-device` (工程器件综合模板)**：
-   * 适用于太阳能电池、智能窗、手机镜头、激光镜、WDM 设备。
-   * 展示真实器件结构语境与实际工程评价指标。
-8. **`grating-emt` (光栅等效介质模板)**：
-   * 适用于一维亚波长光栅。
-   * 展示光栅周期 $\Lambda$、占空比 $f$、TE/TM 结构双折射与 0 级有效介质近似范围警告 ($\rho = \frac{n_{\text{max}}\Lambda}{\lambda_0} < 1$)。
+1. `single-interface`（单界面/少层干涉）；
+2. `periodic-stack`（周期多层膜）；
+3. `defect-cavity`（缺陷腔）；
+4. `metal-dbr-interface`（金属/DBR 界面）；
+5. `absorber-stack`（吸收与有损介质）；
+6. `spectral-weighting`（光谱加权与选择性辐射）；
+7. `engineering-device`（工程器件综合）；
+8. `grating-emt`（光栅有效介质）。
 
 ---
 
-## 四、 39 项案例全量注册表
+## 四、 41 项案例全量注册表
 
-| 序号 | 案例 ID | 中文名称 | 案例分类 | 结构/膜系摘要 | 设计波长 | 入射角与偏振 | 对应 3D 模板 | 状态 | 证据与来源 |
-| :---: | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :---: | :--- |
-| **1** | `quarter_wave_single_layer` | 1/4波长单层减反射膜 | 经典教学 | Air / MgF2(99.6nm) / Glass | 550nm | 0°, TE/TM | `single-interface` | **READY** | `thinfilm/education.py:L60` |
-| **2** | `half_wave_single_layer` | 1/2波长单层相位膜(虚设层) | 经典教学 | Air / MgF2(199.3nm) / Glass | 550nm | 0°, TE/TM | `single-interface` | **READY** | `thinfilm/education.py:L73` |
-| **3** | `single_ar` | 单层减反射膜(任意参数) | 经典教学 | Air / MgF2(111.5nm) / Glass | 550nm | 0°/45°, TE/TM | `single-interface` | **PROTOTYPE_EXIST** | Prototype 1: `single_ar_3d` |
-| **4** | `porous_sio2_layer` | 多孔二氧化硅减反结构 | 经典教学 | Air / Porous-SiO2(104.2nm) / Glass | 550nm | 0°, TE/TM | `single-interface` | **READY** | `thinfilm/education.py:L99` |
-| **5** | `porous_double_ar` | 多孔双层减反膜 | 经典教学 | Air / Porous-SiO2 / TiO2 / Glass | 550nm | 0°, TE/TM | `single-interface` | **READY** | `thinfilm/education.py:L112` |
-| **6** | `moth_eye_effective_gradient` | 蛾眼等效渐变层减反膜 | 经典教学 | Air / 5-Graded-Layers / Glass | 550nm | 0°, TE/TM | `periodic-stack` | **READY** | `thinfilm/education.py:L126` |
-| **7** | `double_ar` | 双层减反射膜(任意参数) | 经典教学 | Air / SiO2 / TiO2 / Glass | 550nm | 0°, TE/TM | `single-interface` | **READY** | `thinfilm/education.py:L145` |
-| **8** | `quarter_wave_double_layer` | 四分之一波长双层减反膜(V形) | 经典教学 | Air / MgF2 / ZrO2 / Glass | 550nm | 0°, TE/TM | `single-interface` | **READY** | `thinfilm/education.py:L159` |
-| **9** | `triple_ar` | 三层渐变折射率减反膜 | 经典教学 | Air / MgF2 / Al2O3 / ZrO2 / Glass | 550nm | 0°, TE/TM | `single-interface` | **READY** | `thinfilm/education.py:L173` |
-| **10** | `high_reflector` | 高反射膜 | 经典教学 | Air / (TiO2/SiO2)^6 / Glass | 550nm | 0°, TE/TM | `periodic-stack` | **READY** | `thinfilm/education.py:L188` |
-| **11** | `quarter_wave_stack` | 1/4波长QW膜堆 | 经典教学 | Air / (TiO2/SiO2)^6 / Glass | 550nm | 0°, TE/TM | `periodic-stack` | **READY** | `thinfilm/education.py:L203` |
-| **12** | `bragg_reflector` | 布拉格反射镜(DBR) | 经典教学 | Air / (TiO2/SiO2)^6 / Glass | 550nm | 0°/30°, TE/TM | `periodic-stack` | **PROTOTYPE_EXIST** | Prototype 2: `bragg_reflector_3d` |
-| **13** | `fp_single_halfwave` | 单半波型 F-P 滤光片 | 经典教学 | Air / (HL)^3 2L (LH)^3 / Glass | 550nm | 0°, TE/TM | `defect-cavity` | **READY** | `thinfilm/education.py:L233` |
-| **14** | `fp_filter` | F-P 腔窄带透射滤光片 | 经典教学 | Air / (HL)^4 2L (LH)^4 / Glass | 550nm | 0°/20°, TE/TM | `defect-cavity` | **PROTOTYPE_EXIST** | Prototype 3: `fp_filter_3d` |
-| **15** | `fp_double_halfwave` | 双半波型 F-P 滤光片 | 经典教学 | Air / (HL)^2 2L (LH)^2 L ... / Glass | 550nm | 0°, TE/TM | `defect-cavity` | **READY** | `thinfilm/education.py:L265` |
-| **16** | `rugate_filter` | Rugate 褶皱渐变折射率滤光片 | 经典教学 | Air / 80-Sinusoidal-Layers / Glass | 550nm | 0°, TE/TM | `periodic-stack` | **READY** | `thinfilm/education.py:L303` |
-| **17** | `neutral_beamsplitter` | 中性分束膜 | 经典教学 | Air / Ag-TiO2-Stack / Glass | 550nm | 45°, TE/TM | `single-interface` | **READY** | `thinfilm/education.py:L325` |
-| **18** | `guided_grating_emt` | 一维亚波长光栅 EMT | 经典教学 | Air / 1D-Si-Grating / Substrate | 1550nm | 0°, TE/TM | `grating-emt` | **READY** | 教学主展示 3; `guided_grating/emt.py` |
-| **19** | `app_solar_cell_ar` | 太阳能电池三层增透膜 | 工程应用 | Air / MgF2 / TiO2 / SiO2 / Si | 300-1100nm | 0°, TE/TM | `engineering-device` | **READY** | `examples/applications/solar_cell_ar.py` |
-| **20** | `app_wdm_filter` | WDM 光通信滤光片 | 工程应用 | Air / (HL)^4 2L (LH)^4 / Glass | 1540-1560nm | 0°, TE/TM | `engineering-device` | **READY** | `examples/applications/wdm_filter.py` |
-| **21** | `app_laser_mirror` | 1064nm 激光高反镜 | 工程应用 | Air / (TiO2/SiO2)^10 / Substrate | 1064nm | 0°, TE/TM | `engineering-device` | **READY** | `examples/applications/laser_mirror.py` |
-| **22** | `app_phone_lens_ar` | 手机镜头多层增透膜 | 工程应用 | Air / MgF2/TiO2/SiO2/Al2O3 / Glass | 400-700nm | 0°/30°, TE/TM | `engineering-device` | **READY** | `examples/applications/phone_lens_ar.py` |
-| **23** | `app_smart_window` | 智能调温窗 Low-E 膜 | 工程应用 | Air / WO3 / NiO / Ag / Glass | 300-2500nm | 0°, TE/TM | `engineering-device` | **READY** | `examples/applications/smart_window.py` |
-| **24** | `mat_library_demo` | 真实材料库与色散插值演示 | 材料效应 | Air / Real-NK-Material / Substrate | 300-1000nm | 0°, TE/TM | `single-interface` | **READY** | `cases/materials/run_material_library_demo.py` |
-| **25** | `tamm_interface_priority` | Tamm 界面态优先极化筛选 | 拓展研究 | Air / 30nm Ag / DBR | 600-900nm | 0°/30°, TE/TM | `metal-dbr-interface` | **READY** | `cases/tamm/run_tamm_interface_priority.py` |
-| **26** | `tamm_phase_bundle` | Tamm 反射相位相干匹配束 | 拓展研究 | Air / 30nm Ag / DBR | 600-900nm | 0°, TE/TM | `metal-dbr-interface` | **PROTOTYPE_EXIST** | Prototype 4: `tamm_state_3d` |
-| **27** | `tamm_phase_candidates` | Tamm 相位匹配候选点搜寻 | 拓展研究 | Air / 30nm Ag / DBR | 600-900nm | 0°, TE/TM | `metal-dbr-interface` | **READY** | `cases/tamm/run_tamm_phase_candidates.py` |
-| **28** | `tamm_phase_focus` | Tamm 相位聚焦与吸收增强 | 拓展研究 | Air / 30nm Ag / DBR | 650nm | 0°, TE/TM | `metal-dbr-interface` | **READY** | `cases/tamm/run_tamm_phase_focus.py` |
-| **29** | `tamm_reflection_phase_screen` | Tamm 界面反射相位多波长筛选 | 拓展研究 | Air / 30nm Ag / DBR | 400-800nm | 0°, TE/TM | `metal-dbr-interface` | **READY** | `cases/tamm/run_tamm_reflection_phase_screen.py` |
-| **30** | `tamm_interface_window_bundle` | Tamm 界面窗口束 | 拓展研究 | Air / Ag / DBR | 600-900nm | 0°, TE/TM | `metal-dbr-interface` | **CONFLICT** | 需外部桌面 E3.csv, E4.csv |
-| **31** | `tamm_interface_window_scan` | Tamm 界面窗口扫描 | 拓展研究 | `Air / Ag / DBR` | 600-900nm | 0°, TE/TM | `metal-dbr-interface` | **CONFLICT** | 需外部桌面 E3.csv, E4.csv |
-| **32** | `pdrc_cooling_bundle` | PDRC 被动辐射制冷评估束 | 拓展研究 | Air / TiO2/SiO2/Ag / Substrate | 300-15000nm | 0°, TE/TM | `spectral-weighting` | **READY** | `cases/pdrc/run_pdrc_cooling_bundle.py` |
-| **33** | `absorbing_baseline_template` | 吸收表面基线模板 | 拓展研究 | Air / Absorbing-Layer / Substrate | 550nm | 0°, TE/TM | `absorber-stack` | **READY** | `cases/absorbing_surface/run_absorbing_surface_baseline_template.py` |
-| **34** | `absorbing_surface_bundle` | 吸收表面综合计算束 | 拓展研究 | Air / Complex-Absorbing-Stack | 300-1100nm | 0°, TE/TM | `absorber-stack` | **READY** | `cases/absorbing_surface/run_absorbing_surface_bundle.py` |
-| **35** | `absorbing_surface_gain` | 吸收表面增益模型 | 拓展研究 | Air / Rough-Absorber / Substrate | 550nm | 0°, TE/TM | `absorber-stack` | **CONFLICT** | 需外部 --rough-csv 文件 |
-| **36** | `absorbing_surface_gain_trend` | 吸收表面增益趋势 | 拓展研究 | Air / Rough-Absorber / Substrate | 550nm | 0°, TE/TM | `absorber-stack` | **CONFLICT** | 需外部 deg.p 样本目录 |
-| **37** | `rugate_80layer_table` | 80层 Rugate 褶皱滤光片列表 | 拓展研究 | Air / 80-Layers / Glass | 550nm | 0°, TE/TM | `periodic-stack` | **READY** | `cases/advanced_ar/run_rugate_80layer_table.py` |
-| **38** | `advanced_ar_bundle` | 高级增透膜计算束 | 拓展研究 | Air / Multi-AR-Stack / Glass | 550nm | 0°, TE/TM | `single-interface` | **CONFLICT** | 需外部 COMSOL 对照 CSV |
-| **39** | `porous_double_ar_topic_bundle` | 多孔双层增透专题 | 拓展研究 | Air / Porous-Double-AR / Glass | 550nm | 0°, TE/TM | `single-interface` | **CONFLICT** | 需外部 COMSOL 对照 CSV |
-
----
-
-## 五、 冲突与缺失数据清单 (Conflict & Missing Data Report)
-
-以下 6 项拓展研究案例由于依赖桌面或外部 COMSOL 导出文件，在无外部数据时可静默降级为 3D 结构参数静态展示或跳过数据注入，不影响 3D 渲染器的统一运行：
-
-1. `tamm_interface_window_bundle`（依赖 `C:\Users\L2791\OneDrive\Desktop\deg.p\E3.csv` 等）
-2. `tamm_interface_window_scan`（依赖 `C:\Users\L2791\OneDrive\Desktop\deg.p\E4.csv` 等）
-3. `absorbing_surface_gain`（依赖 `--rough-csv` 及 `--baseline-csv` 参数）
-4. `absorbing_surface_gain_trend`（依赖 `C:\Users\L2791\OneDrive\Desktop\deg.p` 路径）
-5. `advanced_ar_bundle`（依赖桌面对比 CSV 文件）
-6. `porous_double_ar_topic_bundle`（依赖桌面对比 CSV 文件）
-
-**处理建议**：在 3D 前端可视化系统中，此 6 项案例直接读取对应的 Python 计算抽象结构模型进行 3D 光路与层结构渲染，2D 光谱比对数据在缺失外部文件时优雅隐藏图例对比线。
+| 序号 | 案例 ID | 中文名称 | 分类 | 结构/膜系摘要 | 对应 3D 模板 | 证据状态 (`evidence_status`) | 冲突状态 (`conflict_status`) | 来源位置 |
+| :---: | :--- | :--- | :--- | :--- | :--- | :---: | :---: | :--- |
+| **1** | `quarter_wave_single_layer` | 1/4波长单层减反射膜 | `teaching_thinfilm` | Air / MgF2(99.6nm) / Glass | `single-interface` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L60` |
+| **2** | `half_wave_single_layer` | 1/2波长单层相位膜(虚设层) | `teaching_thinfilm` | Air / MgF2(199.3nm) / Glass | `single-interface` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L73` |
+| **3** | `single_ar` | 单层减反射膜(任意参数) | `teaching_thinfilm` | Air / MgF2(111.5nm) / Glass | `single-interface` | `PROTOTYPE_EXIST` | `NONE` | 原型 1: `single_ar_3d` |
+| **4** | `porous_sio2_layer` | 多孔二氧化硅减反结构 | `teaching_thinfilm` | Air / Porous-SiO2(104.2nm) / Glass | `single-interface` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L99` |
+| **5** | `porous_double_ar` | 多孔双层减反膜 | `teaching_thinfilm` | Air / Porous-SiO2 / TiO2 / Glass | `single-interface` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L112` |
+| **6** | `moth_eye_effective_gradient` | 蛾眼等效渐变层减反膜 | `teaching_thinfilm` | Air / 5-Graded-Layers / Glass | `periodic-stack` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L126` |
+| **7** | `double_ar` | 双层减反射膜(任意参数) | `teaching_thinfilm` | Air / SiO2 / TiO2 / Glass | `single-interface` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L145` |
+| **8** | `quarter_wave_double_layer` | 四分之一波长双层减反膜(V形) | `teaching_thinfilm` | Air / MgF2 / ZrO2 / Glass | `single-interface` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L159` |
+| **9** | `triple_ar` | 三层渐变折射率减反膜 | `teaching_thinfilm` | Air / MgF2 / Al2O3 / ZrO2 / Glass | `single-interface` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L173` |
+| **10** | `high_reflector` | 高反射膜 | `teaching_thinfilm` | Air / (TiO2/SiO2)^6 / Glass | `periodic-stack` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L188` |
+| **11** | `quarter_wave_stack` | 1/4波长QW膜堆 | `teaching_thinfilm` | Air / (TiO2/SiO2)^6 / Glass | `periodic-stack` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L203` |
+| **12** | `bragg_reflector` | 布拉格反射镜(DBR) | `teaching_thinfilm` | Air / (TiO2/SiO2)^6 / Glass | `periodic-stack` | `PROTOTYPE_EXIST` | `NONE` | 原型 2: `bragg_reflector_3d` |
+| **13** | `fp_single_halfwave` | 单半波型 F-P 滤光片 | `teaching_thinfilm` | Air / (HL)^3 2L (LH)^3 / Glass | `defect-cavity` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L233` |
+| **14** | `fp_filter` | F-P 腔窄带透射滤光片 | `teaching_thinfilm` | Air / (HL)^4 2L (LH)^4 / Glass | `defect-cavity` | `PROTOTYPE_EXIST` | `NONE` | 原型 3: `fp_filter_3d` |
+| **15** | `narrowband_filter` | 窄带透射滤光片(别名) | `teaching_thinfilm` | Air / (HL)^4 2L (LH)^4 / Glass | `defect-cavity` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L255` |
+| **16** | `fp_double_halfwave` | 双半波型 F-P 滤光片 | `teaching_thinfilm` | Air / (HL)^2 2L (LH)^2 L ... / Glass | `defect-cavity` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L265` |
+| **17** | `rugate_filter` | Rugate 褶皱渐变折射率滤光片 | `teaching_thinfilm` | Air / 80-Sinusoidal-Layers / Glass | `periodic-stack` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L303` |
+| **18** | `neutral_beamsplitter` | 中性分束膜 | `teaching_thinfilm` | Air / Ag-TiO2-Stack / Glass | `single-interface` | `PHYSICS_DATA_READY` | `NONE` | `thinfilm/education.py:L325` |
+| **19** | `guided_grating_emt` | 一维亚波长光栅 EMT | `teaching_emt` | Air / 1D-Si-Grating / Substrate | `grating-emt` | `PHYSICS_DATA_READY` | `NONE` | 教学主展示 3; `guided_grating/emt.py` |
+| **20** | `app_solar_cell_ar` | 太阳能电池三层增透膜 | `engineering_applications` | Air / MgF2 / TiO2 / SiO2 / Si | `engineering-device` | `PHYSICS_DATA_READY` | `NONE` | `examples/applications/solar_cell_ar.py` |
+| **21** | `app_wdm_filter` | WDM 光通信滤光片 | `engineering_applications` | Air / (HL)^4 2L (LH)^4 / Glass | `engineering-device` | `PHYSICS_DATA_READY` | `NONE` | `examples/applications/wdm_filter.py` |
+| **22** | `app_laser_mirror` | 1064nm 激光高反镜 | `engineering_applications` | Air / (TiO2/SiO2)^10 / Substrate | `engineering-device` | `PHYSICS_DATA_READY` | `NONE` | `examples/applications/laser_mirror.py` |
+| **23** | `app_phone_lens_ar` | 手机镜头多层增透膜 | `engineering_applications` | Air / MgF2/TiO2/SiO2/Al2O3 / Glass | `engineering-device` | `PHYSICS_DATA_READY` | `NONE` | `examples/applications/phone_lens_ar.py` |
+| **24** | `app_smart_window` | 智能调温窗 Low-E 膜 | `engineering_applications` | Air / WO3 / NiO / Ag / Glass | `engineering-device` | `PHYSICS_DATA_READY` | `NONE` | `examples/applications/smart_window.py` |
+| **25** | `mat_library_demo` | 真实材料库与色散插值 | `research_extension` | Air / Real-NK-Material / Substrate | `single-interface` | `PHYSICS_DATA_READY` | `NONE` | `cases/materials/run_material_library_demo.py` |
+| **26** | `tamm_interface_priority` | Tamm 界面态优先极化筛选 | `research_extension` | Air / 30nm Ag / DBR | `metal-dbr-interface` | `PHYSICS_DATA_READY` | `NONE` | `cases/tamm/run_tamm_interface_priority.py` |
+| **27** | `tamm_phase_bundle` | Tamm 反射相位相干匹配束 | `research_extension` | Air / 30nm Ag / DBR | `metal-dbr-interface` | `PROTOTYPE_EXIST` | `NONE` | 原型 4: `tamm_state_3d` |
+| **28** | `tamm_phase_candidates` | Tamm 相位匹配候选点搜寻 | `research_extension` | Air / 30nm Ag / DBR | `metal-dbr-interface` | `PHYSICS_DATA_READY` | `NONE` | `cases/tamm/run_tamm_phase_candidates.py` |
+| **29** | `tamm_phase_focus` | Tamm 相位聚焦与吸收增强 | `research_extension` | Air / 30nm Ag / DBR | `metal-dbr-interface` | `PHYSICS_DATA_READY` | `NONE` | `cases/tamm/run_tamm_phase_focus.py` |
+| **30** | `tamm_reflection_phase_screen` | Tamm 反射相位多波长筛选 | `research_extension` | Air / 30nm Ag / DBR | `metal-dbr-interface` | `PHYSICS_DATA_READY` | `NONE` | `cases/tamm/run_tamm_reflection_phase_screen.py` |
+| **31** | `tamm_interface_window_bundle` | Tamm 界面窗口束 | `research_extension` | Air / Ag / DBR | `metal-dbr-interface` | `EXTERNAL_DATA_REQUIRED` | `EXTERNAL_CSV_MISSING` | 需外部 COMSOL E3.csv |
+| **32** | `tamm_interface_window_scan` | Tamm 界面窗口扫描 | `research_extension` | Air / Ag / DBR | `metal-dbr-interface` | `EXTERNAL_DATA_REQUIRED` | `EXTERNAL_CSV_MISSING` | 需外部 COMSOL E4.csv |
+| **33** | `pdrc_cooling_bundle` | PDRC 被动辐射制冷评估束 | `research_extension` | Air / TiO2/SiO2/Ag / Substrate | `spectral-weighting` | `PHYSICS_DATA_READY` | `NONE` | `cases/pdrc/run_pdrc_cooling_bundle.py` |
+| **34** | `absorbing_baseline_template` | 吸收表面基线模板 | `research_extension` | Air / Absorbing-Layer / Substrate | `absorber-stack` | `PHYSICS_DATA_READY` | `NONE` | `cases/absorbing_surface/run_absorbing_surface_baseline_template.py` |
+| **35** | `absorbing_surface_bundle` | 吸收表面综合计算束 | `research_extension` | Air / Complex-Absorbing-Stack | `absorber-stack` | `PHYSICS_DATA_READY` | `NONE` | `cases/absorbing_surface/run_absorbing_surface_bundle.py` |
+| **36** | `absorbing_surface_gain` | 吸收表面增益模型 | `research_extension` | Air / Rough-Absorber / Substrate | `absorber-stack` | `EXTERNAL_DATA_REQUIRED` | `EXTERNAL_CSV_MISSING` | 需 CLI --rough-csv 参数 |
+| **37** | `absorbing_surface_gain_trend` | 吸收表面增益趋势 | `research_extension` | Air / Rough-Absorber / Substrate | `absorber-stack` | `EXTERNAL_DATA_REQUIRED` | `HARDCODED_PATH_DEPENDENCY` | 依赖桌面 deg.p 样本路径 |
+| **38** | `rugate_80layer_table` | 80层 Rugate 褶皱滤光片列表 | `research_extension` | Air / 80-Layers / Glass | `periodic-stack` | `PHYSICS_DATA_READY` | `NONE` | `cases/advanced_ar/run_rugate_80layer_table.py` |
+| **39** | `advanced_ar_bundle` | 高级增透膜计算束 | `research_extension` | Air / Multi-AR-Stack / Glass | `single-interface` | `EXTERNAL_DATA_REQUIRED` | `HARDCODED_PATH_DEPENDENCY` | 依赖桌面 COMSOL CSV |
+| **40** | `porous_double_ar_topic_bundle` | 多孔双层增透专题 | `research_extension` | Air / Porous-Double-AR / Glass | `single-interface` | `EXTERNAL_DATA_REQUIRED` | `HARDCODED_PATH_DEPENDENCY` | 依赖桌面 COMSOL CSV |
+| **41** | `guided_grating_demo` | 光栅非教学 Runner 入口 | `non_teaching_runner` | Air / 1D-Si-Grating / Substrate | `grating-emt` | `PHYSICS_DATA_READY` | `NONE` | `cases/guided_grating/run_guided_grating_demo.py` (映射至 `guided_grating_emt`) |
