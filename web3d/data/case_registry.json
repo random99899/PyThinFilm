@@ -373,16 +373,16 @@
       "polarization_support": "TE/TM",
       "visualization_template": "periodic-stack",
       "data_dependencies": "NONE",
-      "geometry_status": "GEOMETRY_READY",
-      "physics_data_status": "PHYSICS_DATA_READY",
-      "migration_status": "READY_FOR_MIGRATION",
+      "geometry_status": "GEOMETRY_VERIFIED",
+      "physics_data_status": "PHYSICS_DATA_AVAILABLE",
+      "migration_status": "MIGRATION_VERIFIED",
       "conflict_status": "NONE",
       "calculation_source": "python_export",
       "python_reference_comparison": "NOT_APPLICABLE",
       "animation_semantics": "TEACHING_ILLUSTRATION",
-      "notes": "已对齐 Prototype 2: bragg_reflector_3d 原型",
-      "python_export_status": "NOT_AVAILABLE",
-      "frontend_binding_status": "NOT_RUN"
+      "notes": "Stage B.1B Bragg反射镜迁移完成，读取 Python TMM 45度 TE/TM 7层 (HL)^3 H 导出结果",
+      "python_export_status": "VERIFIED",
+      "frontend_binding_status": "PASSED"
     },
     {
       "id": "fp_single_halfwave",

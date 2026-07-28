@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1A).
+"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1B).
 
 Validates:
 1. ID uniqueness across all registered entries.
@@ -50,7 +50,7 @@ REQUIRED_FIELDS = [
 VALID_ENTRY_KINDS = ["case", "alias", "runner"]
 VALID_GEOMETRY_STATUSES = ["GEOMETRY_READY", "GEOMETRY_VERIFIED", "GEOMETRY_MISMATCH", "PENDING_GEOMETRY", "NOT_AUDITED"]
 VALID_PHYSICS_DATA_STATUSES = ["PHYSICS_DATA_READY", "PHYSICS_DATA_AVAILABLE", "EXTERNAL_DATA_REQUIRED", "ILLUSTRATIVE_ONLY", "NOT_AUDITED"]
-VALID_MIGRATION_STATUSES = ["READY_FOR_MIGRATION", "PROTOTYPE_ONLY", "PENDING_ENGINE_MIGRATION", "BLOCKED"]
+VALID_MIGRATION_STATUSES = ["MIGRATED", "MIGRATION_VERIFIED", "READY_FOR_MIGRATION", "PROTOTYPE_ONLY", "PENDING_ENGINE_MIGRATION", "BLOCKED"]
 VALID_CONFLICT_STATUSES = [
     "NONE",
     "EXTERNAL_CSV_MISSING",
@@ -58,7 +58,7 @@ VALID_CONFLICT_STATUSES = [
     "PROTOTYPE_GEOMETRY_MISMATCH",
 ]
 VALID_CALC_SOURCES = ["python_export", "frontend_reimplementation", "hardcoded", "illustrative_only"]
-VALID_PYTHON_COMPARISONS = ["PASSED", "FAILED", "NOT_RUN"]
+VALID_PYTHON_COMPARISONS = ["PASSED", "FAILED", "NOT_RUN", "NOT_APPLICABLE"]
 VALID_ANIMATION_SEMANTICS = ["PHYSICS_DRIVEN", "TEACHING_ILLUSTRATION", "MIXED"]
 
 
@@ -72,7 +72,7 @@ def validate_registry():
     cases = data.get("cases", [])
 
     print("=" * 65)
-    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1A single_ar)")
+    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1B bragg_reflector)")
     print("=" * 65)
 
     # 1. Entry Count Checks
@@ -124,15 +124,16 @@ def validate_registry():
     illustrative_only_count = sum(1 for c in cases if c.get("physics_data_status") == "ILLUSTRATIVE_ONLY")
     external_data_required_count = sum(1 for c in cases if c.get("physics_data_status") == "EXTERNAL_DATA_REQUIRED")
 
+    migration_verified_count = sum(1 for c in cases if c.get("migration_status") == "MIGRATION_VERIFIED")
     ready_for_migration_count = sum(1 for c in cases if c.get("migration_status") == "READY_FOR_MIGRATION")
     prototype_only_count = sum(1 for c in cases if c.get("migration_status") == "PROTOTYPE_ONLY")
     pending_migration_count = sum(1 for c in cases if c.get("migration_status") == "PENDING_ENGINE_MIGRATION")
 
-    python_passed_count = sum(1 for c in cases if c.get("python_reference_comparison") == "PASSED")
-    python_not_run_count = sum(1 for c in cases if c.get("python_reference_comparison") == "NOT_RUN")
+    frontend_passed_count = sum(1 for c in cases if c.get("frontend_binding_status") == "PASSED")
+    python_export_verified_count = sum(1 for c in cases if c.get("python_export_status") == "VERIFIED")
 
     print("\nEvidence-Backed Status Metrics Breakdown:")
-    print(f"  - geometry_verified_count (single_ar): {geometry_verified_count}")
+    print(f"  - geometry_verified_count:             {geometry_verified_count} (single_ar, bragg_reflector)")
     print(f"  - geometry_ready_count:                {geometry_ready_count}")
     print(f"  - geometry_mismatch_count:             {geometry_mismatch_count}")
     print(f"  - geometry_not_audited_count:          {geometry_not_audited_count}")
@@ -140,14 +141,16 @@ def validate_registry():
     print(f"  - physics_data_ready_count:            {physics_data_ready_count}")
     print(f"  - illustrative_only_count:             {illustrative_only_count}")
     print(f"  - external_data_required_count:        {external_data_required_count}")
+    print(f"  - migration_verified_count:            {migration_verified_count} (single_ar, bragg_reflector)")
     print(f"  - ready_for_migration_count:           {ready_for_migration_count}")
     print(f"  - prototype_only_count:                {prototype_only_count}")
     print(f"  - pending_engine_migration_count:      {pending_migration_count}")
-    print(f"  - python_reference_passed_count:       {python_passed_count}")
-    print(f"  - python_reference_not_run_count:      {python_not_run_count}")
+    print(f"  - frontend_binding_passed_count:       {frontend_passed_count}")
+    print(f"  - python_export_verified_count:        {python_export_verified_count}")
 
-    # Assert single_ar is the only PASSED case
-    assert python_passed_count == 1, f"Expected exactly 1 python_reference_comparison PASSED (single_ar), got {python_passed_count}"
+    # Assert exactly 2 migrated cases (single_ar, bragg_reflector)
+    assert migration_verified_count == 2, f"Expected 2 MIGRATION_VERIFIED cases, got {migration_verified_count}"
+    assert frontend_passed_count == 2, f"Expected 2 frontend_binding PASSED cases, got {frontend_passed_count}"
 
     # 3. Schema Completeness & File Existence Check
     errors = []
