@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage A.2 Fix).
+"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1A).
 
 Validates:
 1. ID uniqueness across all registered entries.
@@ -48,8 +48,8 @@ REQUIRED_FIELDS = [
 ]
 
 VALID_ENTRY_KINDS = ["case", "alias", "runner"]
-VALID_GEOMETRY_STATUSES = ["GEOMETRY_READY", "GEOMETRY_MISMATCH", "PENDING_GEOMETRY", "NOT_AUDITED"]
-VALID_PHYSICS_DATA_STATUSES = ["PHYSICS_DATA_READY", "EXTERNAL_DATA_REQUIRED", "ILLUSTRATIVE_ONLY", "NOT_AUDITED"]
+VALID_GEOMETRY_STATUSES = ["GEOMETRY_READY", "GEOMETRY_VERIFIED", "GEOMETRY_MISMATCH", "PENDING_GEOMETRY", "NOT_AUDITED"]
+VALID_PHYSICS_DATA_STATUSES = ["PHYSICS_DATA_READY", "PHYSICS_DATA_AVAILABLE", "EXTERNAL_DATA_REQUIRED", "ILLUSTRATIVE_ONLY", "NOT_AUDITED"]
 VALID_MIGRATION_STATUSES = ["READY_FOR_MIGRATION", "PROTOTYPE_ONLY", "PENDING_ENGINE_MIGRATION", "BLOCKED"]
 VALID_CONFLICT_STATUSES = [
     "NONE",
@@ -72,7 +72,7 @@ def validate_registry():
     cases = data.get("cases", [])
 
     print("=" * 65)
-    print("PyThinFilm 3D Case Registry Evidence Audit (Stage A.2 Reset)")
+    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1A single_ar)")
     print("=" * 65)
 
     # 1. Entry Count Checks
@@ -114,10 +114,12 @@ def validate_registry():
     print("[PASS] Entry Count Assertions PASSED (41 entries, 40 physical cases, 0 alias, 1 runner, 40 targets).")
 
     # 2. Status Dimension Metrics Breakdown (excluding runners from independent geometry scenes)
+    geometry_verified_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "GEOMETRY_VERIFIED")
     geometry_ready_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "GEOMETRY_READY")
     geometry_mismatch_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "GEOMETRY_MISMATCH")
     geometry_not_audited_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "NOT_AUDITED")
 
+    physics_data_available_count = sum(1 for c in cases if c.get("physics_data_status") == "PHYSICS_DATA_AVAILABLE")
     physics_data_ready_count = sum(1 for c in cases if c.get("physics_data_status") == "PHYSICS_DATA_READY")
     illustrative_only_count = sum(1 for c in cases if c.get("physics_data_status") == "ILLUSTRATIVE_ONLY")
     external_data_required_count = sum(1 for c in cases if c.get("physics_data_status") == "EXTERNAL_DATA_REQUIRED")
@@ -130,9 +132,11 @@ def validate_registry():
     python_not_run_count = sum(1 for c in cases if c.get("python_reference_comparison") == "NOT_RUN")
 
     print("\nEvidence-Backed Status Metrics Breakdown:")
-    print(f"  - geometry_ready_count (excl. runner): {geometry_ready_count}")
+    print(f"  - geometry_verified_count (single_ar): {geometry_verified_count}")
+    print(f"  - geometry_ready_count:                {geometry_ready_count}")
     print(f"  - geometry_mismatch_count:             {geometry_mismatch_count}")
     print(f"  - geometry_not_audited_count:          {geometry_not_audited_count}")
+    print(f"  - physics_data_available_count:        {physics_data_available_count}")
     print(f"  - physics_data_ready_count:            {physics_data_ready_count}")
     print(f"  - illustrative_only_count:             {illustrative_only_count}")
     print(f"  - external_data_required_count:        {external_data_required_count}")
@@ -142,8 +146,8 @@ def validate_registry():
     print(f"  - python_reference_passed_count:       {python_passed_count}")
     print(f"  - python_reference_not_run_count:      {python_not_run_count}")
 
-    # Assert no unverified PASSED status
-    assert python_passed_count == 0, f"Expected 0 python_reference_comparison PASSED until point-by-point error report is generated, got {python_passed_count}"
+    # Assert single_ar is the only PASSED case
+    assert python_passed_count == 1, f"Expected exactly 1 python_reference_comparison PASSED (single_ar), got {python_passed_count}"
 
     # 3. Schema Completeness & File Existence Check
     errors = []

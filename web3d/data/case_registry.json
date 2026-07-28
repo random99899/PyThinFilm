@@ -91,14 +91,14 @@
       "polarization_support": "TE/TM",
       "visualization_template": "single-interface",
       "data_dependencies": "NONE",
-      "geometry_status": "GEOMETRY_READY",
-      "physics_data_status": "PHYSICS_DATA_READY",
+      "geometry_status": "GEOMETRY_VERIFIED",
+      "physics_data_status": "PHYSICS_DATA_AVAILABLE",
       "migration_status": "READY_FOR_MIGRATION",
       "conflict_status": "NONE",
-      "calculation_source": "frontend_reimplementation",
-      "python_reference_comparison": "NOT_RUN",
+      "calculation_source": "python_export",
+      "python_reference_comparison": "PASSED",
       "animation_semantics": "PHYSICS_DRIVEN",
-      "notes": "已对齐 Prototype 1: single_ar_3d 原型"
+      "notes": "Stage B.1A 单案例迁移完成，读取 Python TMM 45度 TE/TM 导出结果 (web3d/public/results/single_ar.json)"
     },
     {
       "id": "porous_sio2_layer",
