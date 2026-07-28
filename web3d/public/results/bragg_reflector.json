@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "bragg_reflector",
   "title": "Bragg反射镜/高反射膜",
-  "source_commit": "a6b66e1d7e7cd1105e2c329b1e3dccfefd59c116",
+  "source_commit": "d7518e67c38848d417cd6ec6ace9094760d2642b",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_high_reflector_layers",
-  "generated_at": "2026-07-28T09:46:38.524081",
+  "generated_at": "2026-07-28T09:54:27.550896",
   "calculation_source": "python_export",
   "design_specification": {
     "design_wavelength_nm": 550.0,
@@ -1332,30 +1332,56 @@
       "A": 0.0
     }
   },
-  "polarization_metrics_45deg": {
+  "stopband_metrics": {
     "threshold_R": 0.7,
     "TE": {
-      "R_max": 0.963766,
-      "lambda_at_R_max_nm": 498.0,
-      "stopband_start_nm": 410.0,
-      "stopband_end_nm": 630.0,
-      "stopband_width_nm": 220.0,
-      "R_at_550nm": 0.946733,
-      "T_at_550nm": 0.053267,
-      "A_at_550nm": 0.0
+      "segments": [
+        {
+          "start_index": 5,
+          "end_index": 115,
+          "start_nm": 410.0,
+          "end_nm": 630.0,
+          "width_nm": 220.0,
+          "max_R": 0.963766,
+          "wavelength_at_max_R_nm": 498.0
+        }
+      ],
+      "selected_segment": {
+        "start_index": 5,
+        "end_index": 115,
+        "start_nm": 410.0,
+        "end_nm": 630.0,
+        "width_nm": 220.0,
+        "max_R": 0.963766,
+        "wavelength_at_max_R_nm": 498.0
+      },
+      "selection_rule": "Primary continuous segment with max R in Bragg reflection band"
     },
     "TM": {
-      "R_max": 0.791552,
-      "lambda_at_R_max_nm": 498.0,
-      "stopband_start_nm": 454.0,
-      "stopband_end_nm": 550.0,
-      "stopband_width_nm": 96.0,
-      "R_at_550nm": 0.706784,
-      "T_at_550nm": 0.293216,
-      "A_at_550nm": 0.0
+      "segments": [
+        {
+          "start_index": 27,
+          "end_index": 75,
+          "start_nm": 454.0,
+          "end_nm": 550.0,
+          "width_nm": 96.0,
+          "max_R": 0.791552,
+          "wavelength_at_max_R_nm": 498.0
+        }
+      ],
+      "selected_segment": {
+        "start_index": 27,
+        "end_index": 75,
+        "start_nm": 454.0,
+        "end_nm": 550.0,
+        "width_nm": 96.0,
+        "max_R": 0.791552,
+        "wavelength_at_max_R_nm": 498.0
+      },
+      "selection_rule": "Primary continuous segment with max R in Bragg reflection band"
     }
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "21e0edf7041a49e8",
-  "result_hash": "85ab9ed11dd19e63"
+  "result_hash": "9d50ddf53758b84f"
 }

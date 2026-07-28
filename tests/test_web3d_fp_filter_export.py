@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Pytest verification for fp_filter exported JSON data (Stage B.1C).
+"""Pytest verification for fp_filter exported JSON data (Stage B.1C.1).
 
 Validates:
 1. Re-invokes Python TMM core simulate_report_design('fp_filter').
@@ -8,7 +8,7 @@ Validates:
 4. Absence of NaN / Inf values.
 5. Full spectrum energy conservation: max(abs(R + T + A - 1.0)) < 1e-6 for TE and TM.
 6. 13 layers structure (Air / (HL)^3 C (LH)^3 / Glass).
-7. Transmission resonance peak metrics (T > 0.95).
+7. Separation of global max T and true intra-stopband defect mode (TE peak T > 0.90 at 484.0nm).
 """
 
 from __future__ import annotations
@@ -78,6 +78,7 @@ def test_fp_filter_python_export_verification():
     assert data["layers"][6]["type"] == "C" # Layer 7 is Cavity Spacer (C)
     assert data["layers"][6]["role"] == "cavity_spacer"
 
-    # 6. Transmission peak metrics check
-    assert data["resonance_metrics"]["TE"]["transmission_peak"] > 0.95
-    assert data["resonance_metrics"]["TM"]["transmission_peak"] > 0.95
+    # 6. Global vs Intra-stopband defect mode metrics check
+    assert data["global_transmission_metrics"]["TE"]["wavelength_nm"] == 664.0
+    assert data["resonance_metrics"]["TE"]["selected_peak"]["wavelength_nm"] == 484.0
+    assert data["resonance_metrics"]["TE"]["selected_peak"]["T_peak"] > 0.90

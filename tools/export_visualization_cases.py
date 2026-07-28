@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Export script for PyThinFilm 3D Visualization cases (Stage B.1C).
+"""Export script for PyThinFilm 3D Visualization cases (Stage B.1C.1).
 
 Exports canonical Python TMM calculation results for single_ar, bragg_reflector, and fp_filter into web3d/public/results/<case_id>.json.
+Includes continuous stopband segmentation, intra-stopband cavity defect mode peak search, and cavity phase-matching estimates.
 """
 
 from __future__ import annotations
@@ -32,6 +33,35 @@ def get_git_commit_hash():
 def compute_hash(data_obj):
     raw = json.dumps(data_obj, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def split_continuous_segments(wl, R, threshold=0.50):
+    above_indices = np.where(R >= threshold)[0]
+    if len(above_indices) == 0:
+        return []
+
+    diffs = np.diff(above_indices)
+    split_points = np.where(diffs > 1)[0] + 1
+    groups = np.split(above_indices, split_points)
+
+    segments = []
+    for g in groups:
+        if len(g) == 0:
+            continue
+        start_idx, end_idx = g[0], g[-1]
+        sub_r = R[start_idx : end_idx + 1]
+        max_r_idx = start_idx + int(np.argmax(sub_r))
+
+        segments.append({
+            "start_index": int(start_idx),
+            "end_index": int(end_idx),
+            "start_nm": round(float(wl[start_idx]), 1),
+            "end_nm": round(float(wl[end_idx]), 1),
+            "width_nm": round(float(wl[end_idx] - wl[start_idx]), 1),
+            "max_R": round(float(R[max_r_idx]), 6),
+            "wavelength_at_max_R_nm": round(float(wl[max_r_idx]), 1)
+        })
+    return segments
 
 
 def export_single_ar():
@@ -143,11 +173,12 @@ def export_bragg_reflector():
     }
 
     idx_550 = int(np.argmin(np.abs(wl - 550.0)))
-    idx_te_max = int(np.argmax(r_te))
-    idx_tm_max = int(np.argmax(r_tm))
 
-    te_stopband = wl[r_te >= 0.70]
-    tm_stopband = wl[r_tm >= 0.70]
+    te_segments = split_continuous_segments(wl, r_te, threshold=0.70)
+    tm_segments = split_continuous_segments(wl, r_tm, threshold=0.70)
+
+    te_primary = max(te_segments, key=lambda s: s["max_R"]) if te_segments else None
+    tm_primary = max(tm_segments, key=lambda s: s["max_R"]) if tm_segments else None
 
     data = {
         "schema_version": "1.0.0",
@@ -192,27 +223,17 @@ def export_bragg_reflector():
                 "A": round(float(a_tm[idx_550]), 6)
             }
         },
-        "polarization_metrics_45deg": {
+        "stopband_metrics": {
             "threshold_R": 0.70,
             "TE": {
-                "R_max": round(float(r_te[idx_te_max]), 6),
-                "lambda_at_R_max_nm": round(float(wl[idx_te_max]), 1),
-                "stopband_start_nm": round(float(te_stopband[0]), 1) if len(te_stopband) > 0 else None,
-                "stopband_end_nm": round(float(te_stopband[-1]), 1) if len(te_stopband) > 0 else None,
-                "stopband_width_nm": round(float(te_stopband[-1] - te_stopband[0]), 1) if len(te_stopband) > 0 else 0.0,
-                "R_at_550nm": round(float(r_te[idx_550]), 6),
-                "T_at_550nm": round(float(t_te[idx_550]), 6),
-                "A_at_550nm": round(float(a_te[idx_550]), 6)
+                "segments": te_segments,
+                "selected_segment": te_primary,
+                "selection_rule": "Primary continuous segment with max R in Bragg reflection band"
             },
             "TM": {
-                "R_max": round(float(r_tm[idx_tm_max]), 6),
-                "lambda_at_R_max_nm": round(float(wl[idx_tm_max]), 1),
-                "stopband_start_nm": round(float(tm_stopband[0]), 1) if len(tm_stopband) > 0 else None,
-                "stopband_end_nm": round(float(tm_stopband[-1]), 1) if len(tm_stopband) > 0 else None,
-                "stopband_width_nm": round(float(tm_stopband[-1] - tm_stopband[0]), 1) if len(tm_stopband) > 0 else 0.0,
-                "R_at_550nm": round(float(r_tm[idx_550]), 6),
-                "T_at_550nm": round(float(t_tm[idx_550]), 6),
-                "A_at_550nm": round(float(a_tm[idx_550]), 6)
+                "segments": tm_segments,
+                "selected_segment": tm_primary,
+                "selection_rule": "Primary continuous segment with max R in Bragg reflection band"
             }
         },
         "phase_data_status": "NOT_AVAILABLE",
@@ -241,7 +262,6 @@ def export_fp_filter():
     t_tm = res_tm["T"]
     a_tm = res_tm["A"]
 
-    # 13 layers extracted from Python core
     layer_stack_info = [
         {
             "layer_index": idx + 1,
@@ -258,16 +278,58 @@ def export_fp_filter():
         "theta_deg": 45.0,
         "lambda0_nm": 550.0,
         "fp_spacer_kind": "L",
-        "periods": 3, # 13 layers: (HL)^3 C (LH)^3
+        "periods": 4, # Spec periods=4 -> (periods-1)=3 pairs per side -> 13 layers: (HL)^3 C (LH)^3
         "n_high": 2.15,
         "n_low": 1.38,
         "n_air": 1.0,
         "n_glass": 1.52
     }
 
-    idx_550 = int(np.argmin(np.abs(wl - 550.0)))
-    idx_te_max = int(np.argmax(t_te))
-    idx_tm_max = int(np.argmax(t_tm))
+    # 1. Global transmission maximum
+    idx_te_global = int(np.argmax(t_te))
+    idx_tm_global = int(np.argmax(t_tm))
+
+    # 2. Continuous stopband segmentation (threshold R >= 0.35 to encompass stopband walls)
+    te_stop_segments = split_continuous_segments(wl, r_te, threshold=0.35)
+    tm_stop_segments = split_continuous_segments(wl, r_tm, threshold=0.35)
+
+    # 3. Find local transmission peaks inside DBR stopband channel (400-600nm)
+    def search_stopband_defect_peaks(wl, T, R, min_wl=400.0, max_wl=600.0):
+        candidates = []
+        for i in range(1, len(T) - 1):
+            w = wl[i]
+            if min_wl <= w <= max_wl and T[i] > T[i - 1] and T[i] > T[i + 1]:
+                # Check surrounding R walls
+                left_r = np.max(R[max(0, i-20):i])
+                right_r = np.max(R[i:min(len(R), i+20)])
+                prominence = float(T[i] - min(T[i-1], T[i+1]))
+                
+                candidates.append({
+                    "wavelength_nm": round(float(w), 1),
+                    "index": int(i),
+                    "T_peak": round(float(T[i]), 6),
+                    "R_at_peak": round(float(R[i]), 6),
+                    "A_at_peak": 0.0,
+                    "surrounding_stopband_R_left": round(float(left_r), 4),
+                    "surrounding_stopband_R_right": round(float(right_r), 4),
+                    "prominence": round(prominence, 6),
+                    "inside_stopband": True
+                })
+        return candidates
+
+    te_candidates = search_stopband_defect_peaks(wl, t_te, r_te)
+    tm_candidates = search_stopband_defect_peaks(wl, t_tm, r_tm)
+
+    # Select candidate closest to cavity phase-matching estimate (~472.3nm)
+    n_C = 1.38
+    d_C = 199.2754
+    sin_theta_C = np.sin(np.radians(45.0)) / n_C
+    theta_C_deg = float(np.degrees(np.arcsin(sin_theta_C)))
+    cos_theta_C = float(np.cos(np.arcsin(sin_theta_C)))
+    estimated_wl = round(float(2 * n_C * d_C * cos_theta_C), 1)
+
+    te_selected = min(te_candidates, key=lambda c: abs(c["wavelength_nm"] - estimated_wl)) if te_candidates else None
+    tm_selected = min(tm_candidates, key=lambda c: abs(c["wavelength_nm"] - estimated_wl)) if tm_candidates else None
 
     data = {
         "schema_version": "1.0.0",
@@ -282,8 +344,8 @@ def export_fp_filter():
             "design_wavelength_nm": 550.0,
             "dH_nm": round(550.0 / (4 * 2.15), 4),
             "dL_nm": round(550.0 / (4 * 1.38), 4),
-            "dC_nm": round(550.0 / (2 * 1.38), 4), # Half-wave cavity spacer (2L)
-            "thickness_design_mode": "Normal incidence 0 deg QWOT/HWOT without 45 deg angle compensation",
+            "dC_nm": round(550.0 / (2 * 1.38), 4),
+            "periods_param_explanation": "default_params.periods=4 specifies DBR mirror refinement pairs count (periods-1)=3 per side, total 13 layers: (HL)^3 C (LH)^3",
             "incidence_angle_deg": 45.0
         },
         "polarization_support": ["TE", "TM"],
@@ -301,34 +363,54 @@ def export_fp_filter():
             "T": [round(float(x), 6) for x in t_tm],
             "A": [round(float(x), 6) for x in a_tm]
         },
-        "design_point_550nm": {
+        "global_transmission_metrics": {
             "TE": {
-                "R": round(float(r_te[idx_550]), 6),
-                "T": round(float(t_te[idx_550]), 6),
-                "A": round(float(a_te[idx_550]), 6)
+                "max_T": round(float(t_te[idx_te_global]), 6),
+                "wavelength_nm": round(float(wl[idx_te_global]), 1),
+                "note": "Global transmission max outside DBR stopband (passband oscillation)"
             },
             "TM": {
-                "R": round(float(r_tm[idx_550]), 6),
-                "T": round(float(t_tm[idx_550]), 6),
-                "A": round(float(a_tm[idx_550]), 6)
+                "max_T": round(float(t_tm[idx_tm_global]), 6),
+                "wavelength_nm": round(float(wl[idx_tm_global]), 1),
+                "note": "Global transmission max outside DBR stopband (passband oscillation)"
+            }
+        },
+        "stopband_metrics": {
+            "threshold_R": 0.35,
+            "TE": {
+                "segments": te_stop_segments,
+                "selection_rule": "DBR stopband walls surrounding cavity defect channel"
+            },
+            "TM": {
+                "segments": tm_stop_segments,
+                "selection_rule": "DBR stopband walls surrounding cavity defect channel"
             }
         },
         "resonance_metrics": {
             "TE": {
-                "transmission_peak": round(float(t_te[idx_te_max]), 6),
-                "peak_wavelength_nm": round(float(wl[idx_te_max]), 1),
-                "reflection_at_peak": round(float(r_te[idx_te_max]), 6),
-                "absorption_at_peak": round(float(a_te[idx_te_max]), 6)
+                "resonance_status": "FOUND" if te_selected else "NOT_FOUND",
+                "candidates": te_candidates,
+                "selected_peak": te_selected,
+                "fwhm_status": "NOT_AVAILABLE",
+                "selection_rule": "Cavity defect mode peak inside DBR stopband channel closest to 1st order phase estimate (472.3nm)"
             },
             "TM": {
-                "transmission_peak": round(float(t_tm[idx_tm_max]), 6),
-                "peak_wavelength_nm": round(float(wl[idx_tm_max]), 1),
-                "reflection_at_peak": round(float(r_tm[idx_tm_max]), 6),
-                "absorption_at_peak": round(float(a_tm[idx_tm_max]), 6)
+                "resonance_status": "FOUND" if tm_selected else "NOT_FOUND",
+                "candidates": tm_candidates,
+                "selected_peak": tm_selected,
+                "fwhm_status": "NOT_AVAILABLE",
+                "selection_rule": "Cavity defect mode peak inside DBR stopband channel closest to 1st order phase estimate (472.3nm)"
             }
         },
+        "cavity_phase_estimate": {
+            "n_cavity": n_C,
+            "d_cavity_nm": d_C,
+            "theta_cavity_deg": round(theta_C_deg, 2),
+            "estimated_wavelength_nm": estimated_wl,
+            "deviation_TE_nm": round(abs(te_selected["wavelength_nm"] - estimated_wl), 1) if te_selected else None,
+            "deviation_TM_nm": round(abs(tm_selected["wavelength_nm"] - estimated_wl), 1) if tm_selected else None
+        },
         "phase_data_status": "NOT_AVAILABLE",
-        "fwhm_status": "NOT_AVAILABLE",
         "input_parameter_hash": compute_hash(input_params)
     }
 

@@ -2,17 +2,17 @@
   "schema_version": "1.0.0",
   "case_id": "fp_filter",
   "title": "F-P干涉滤光片/窄带滤光片",
-  "source_commit": "a6b66e1d7e7cd1105e2c329b1e3dccfefd59c116",
+  "source_commit": "d7518e67c38848d417cd6ec6ace9094760d2642b",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_fp_single_halfwave_layers",
-  "generated_at": "2026-07-28T09:46:38.623563",
+  "generated_at": "2026-07-28T09:54:27.588724",
   "calculation_source": "python_export",
   "design_specification": {
     "design_wavelength_nm": 550.0,
     "dH_nm": 63.9535,
     "dL_nm": 99.6377,
     "dC_nm": 199.2754,
-    "thickness_design_mode": "Normal incidence 0 deg QWOT/HWOT without 45 deg angle compensation",
+    "periods_param_explanation": "default_params.periods=4 specifies DBR mirror refinement pairs count (periods-1)=3 per side, total 13 layers: (HL)^3 C (LH)^3",
     "incidence_angle_deg": 45.0
   },
   "polarization_support": [
@@ -2595,34 +2595,145 @@
       0.0
     ]
   },
-  "design_point_550nm": {
+  "global_transmission_metrics": {
     "TE": {
-      "R": 0.99265,
-      "T": 0.00735,
-      "A": 0.0
+      "max_T": 0.97879,
+      "wavelength_nm": 664.0,
+      "note": "Global transmission max outside DBR stopband (passband oscillation)"
     },
     "TM": {
-      "R": 0.915919,
-      "T": 0.084081,
-      "A": 0.0
+      "max_T": 0.999641,
+      "wavelength_nm": 644.0,
+      "note": "Global transmission max outside DBR stopband (passband oscillation)"
+    }
+  },
+  "stopband_metrics": {
+    "threshold_R": 0.35,
+    "TE": {
+      "segments": [
+        {
+          "start_index": 0,
+          "end_index": 82,
+          "start_nm": 400.0,
+          "end_nm": 482.0,
+          "width_nm": 82.0,
+          "max_R": 0.986883,
+          "wavelength_at_max_R_nm": 442.0
+        },
+        {
+          "start_index": 87,
+          "end_index": 251,
+          "start_nm": 487.0,
+          "end_nm": 651.0,
+          "width_nm": 164.0,
+          "max_R": 0.992703,
+          "wavelength_at_max_R_nm": 546.0
+        },
+        {
+          "start_index": 285,
+          "end_index": 331,
+          "start_nm": 685.0,
+          "end_nm": 731.0,
+          "width_nm": 46.0,
+          "max_R": 0.465118,
+          "wavelength_at_max_R_nm": 705.0
+        }
+      ],
+      "selection_rule": "DBR stopband walls surrounding cavity defect channel"
+    },
+    "TM": {
+      "segments": [
+        {
+          "start_index": 7,
+          "end_index": 78,
+          "start_nm": 407.0,
+          "end_nm": 478.0,
+          "width_nm": 71.0,
+          "max_R": 0.87888,
+          "wavelength_at_max_R_nm": 444.0
+        },
+        {
+          "start_index": 94,
+          "end_index": 218,
+          "start_nm": 494.0,
+          "end_nm": 618.0,
+          "width_nm": 124.0,
+          "max_R": 0.917589,
+          "wavelength_at_max_R_nm": 544.0
+        }
+      ],
+      "selection_rule": "DBR stopband walls surrounding cavity defect channel"
     }
   },
   "resonance_metrics": {
     "TE": {
-      "transmission_peak": 0.97879,
-      "peak_wavelength_nm": 664.0,
-      "reflection_at_peak": 0.02121,
-      "absorption_at_peak": 0.0
+      "resonance_status": "FOUND",
+      "candidates": [
+        {
+          "wavelength_nm": 484.0,
+          "index": 84,
+          "T_peak": 0.90079,
+          "R_at_peak": 0.09921,
+          "A_at_peak": 0.0,
+          "surrounding_stopband_R_left": 0.9716,
+          "surrounding_stopband_R_right": 0.9701,
+          "prominence": 0.104201,
+          "inside_stopband": true
+        }
+      ],
+      "selected_peak": {
+        "wavelength_nm": 484.0,
+        "index": 84,
+        "T_peak": 0.90079,
+        "R_at_peak": 0.09921,
+        "A_at_peak": 0.0,
+        "surrounding_stopband_R_left": 0.9716,
+        "surrounding_stopband_R_right": 0.9701,
+        "prominence": 0.104201,
+        "inside_stopband": true
+      },
+      "fwhm_status": "NOT_AVAILABLE",
+      "selection_rule": "Cavity defect mode peak inside DBR stopband channel closest to 1st order phase estimate (472.3nm)"
     },
     "TM": {
-      "transmission_peak": 0.999641,
-      "peak_wavelength_nm": 644.0,
-      "reflection_at_peak": 0.000359,
-      "absorption_at_peak": 0.0
+      "resonance_status": "FOUND",
+      "candidates": [
+        {
+          "wavelength_nm": 486.0,
+          "index": 86,
+          "T_peak": 0.990813,
+          "R_at_peak": 0.009187,
+          "A_at_peak": 0.0,
+          "surrounding_stopband_R_left": 0.7686,
+          "surrounding_stopband_R_right": 0.7539,
+          "prominence": 0.011396,
+          "inside_stopband": true
+        }
+      ],
+      "selected_peak": {
+        "wavelength_nm": 486.0,
+        "index": 86,
+        "T_peak": 0.990813,
+        "R_at_peak": 0.009187,
+        "A_at_peak": 0.0,
+        "surrounding_stopband_R_left": 0.7686,
+        "surrounding_stopband_R_right": 0.7539,
+        "prominence": 0.011396,
+        "inside_stopband": true
+      },
+      "fwhm_status": "NOT_AVAILABLE",
+      "selection_rule": "Cavity defect mode peak inside DBR stopband channel closest to 1st order phase estimate (472.3nm)"
     }
   },
+  "cavity_phase_estimate": {
+    "n_cavity": 1.38,
+    "d_cavity_nm": 199.2754,
+    "theta_cavity_deg": 30.82,
+    "estimated_wavelength_nm": 472.3,
+    "deviation_TE_nm": 11.7,
+    "deviation_TM_nm": 13.7
+  },
   "phase_data_status": "NOT_AVAILABLE",
-  "fwhm_status": "NOT_AVAILABLE",
-  "input_parameter_hash": "08441b163753ef5a",
-  "result_hash": "8a277fe9169046a6"
+  "input_parameter_hash": "a6ce3935dbf1eb03",
+  "result_hash": "60b3dfb44312a2d1"
 }
