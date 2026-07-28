@@ -5,6 +5,7 @@ import { ResourceDisposer } from "./core/ResourceDisposer.js";
 
 import { SingleInterfaceTemplate } from "./templates/single-interface.js";
 import { PeriodicStackTemplate } from "./templates/periodic-stack.js";
+import { DefectCavityTemplate } from "./templates/defect-cavity.js";
 
 import { loadCaseRegistry } from "./data/registryLoader.js";
 import { validateCaseConfig } from "./data/caseConfigValidator.js";
@@ -36,6 +37,7 @@ class App {
     this.templateMap = {
       "single-interface": SingleInterfaceTemplate,
       "periodic-stack": PeriodicStackTemplate,
+      "defect-cavity": DefectCavityTemplate,
     };
   }
 

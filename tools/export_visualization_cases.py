@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Export script for PyThinFilm 3D Visualization cases (Stage B.1B.1).
+"""Export script for PyThinFilm 3D Visualization cases (Stage B.1C).
 
-Exports canonical Python TMM calculation results for single_ar and bragg_reflector into web3d/public/results/<case_id>.json.
+Exports canonical Python TMM calculation results for single_ar, bragg_reflector, and fp_filter into web3d/public/results/<case_id>.json.
 """
 
 from __future__ import annotations
@@ -126,7 +126,6 @@ def export_bragg_reflector():
     t_tm = res_tm["T"]
     a_tm = res_tm["A"]
 
-    # Exact Python layers extracted from res_te['layers']
     layer_stack_info = [
         {"layer_index": idx + 1, "type": lyr["name"], "n": lyr["n_real"], "thickness_nm": round(lyr["thickness_nm"], 4)}
         for idx, lyr in enumerate(res_te["layers"])
@@ -136,10 +135,9 @@ def export_bragg_reflector():
         "case_id": "bragg_reflector",
         "theta_deg": 45.0,
         "lambda0_nm": 550.0,
-        "design_note": "Layer thicknesses designed at 0 deg QWOT (550nm), evaluated at 45 deg oblique incidence.",
         "n_high": 2.15,
         "n_low": 1.38,
-        "periods": 3.5, # 7 layers: H L H L H L H
+        "periods": 3.5,
         "n_air": 1.0,
         "n_glass": 1.52
     }
@@ -226,6 +224,120 @@ def export_bragg_reflector():
     print(f"[export] Successfully exported bragg_reflector results -> {out_file}")
 
 
+def export_fp_filter():
+    out_dir = ROOT / "web3d" / "public" / "results"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / "fp_filter.json"
+
+    res_te = simulate_report_design("fp_filter", theta_deg=45.0, pol="s")
+    res_tm = simulate_report_design("fp_filter", theta_deg=45.0, pol="p")
+
+    wl = res_te["wavelength_nm"]
+    r_te = res_te["R"]
+    t_te = res_te["T"]
+    a_te = res_te["A"]
+
+    r_tm = res_tm["R"]
+    t_tm = res_tm["T"]
+    a_tm = res_tm["A"]
+
+    # 13 layers extracted from Python core
+    layer_stack_info = [
+        {
+            "layer_index": idx + 1,
+            "type": lyr["name"],
+            "role": "cavity_spacer" if lyr["name"] == "C" else "mirror_layer",
+            "n": lyr["n_real"],
+            "thickness_nm": round(lyr["thickness_nm"], 4)
+        }
+        for idx, lyr in enumerate(res_te["layers"])
+    ]
+
+    input_params = {
+        "case_id": "fp_filter",
+        "theta_deg": 45.0,
+        "lambda0_nm": 550.0,
+        "fp_spacer_kind": "L",
+        "periods": 3, # 13 layers: (HL)^3 C (LH)^3
+        "n_high": 2.15,
+        "n_low": 1.38,
+        "n_air": 1.0,
+        "n_glass": 1.52
+    }
+
+    idx_550 = int(np.argmin(np.abs(wl - 550.0)))
+    idx_te_max = int(np.argmax(t_te))
+    idx_tm_max = int(np.argmax(t_tm))
+
+    data = {
+        "schema_version": "1.0.0",
+        "case_id": "fp_filter",
+        "title": "F-P干涉滤光片/窄带滤光片",
+        "source_commit": get_git_commit_hash(),
+        "source_file": "thinfilm/education.py",
+        "source_symbol": "build_fp_single_halfwave_layers",
+        "generated_at": datetime.datetime.now().isoformat(),
+        "calculation_source": "python_export",
+        "design_specification": {
+            "design_wavelength_nm": 550.0,
+            "dH_nm": round(550.0 / (4 * 2.15), 4),
+            "dL_nm": round(550.0 / (4 * 1.38), 4),
+            "dC_nm": round(550.0 / (2 * 1.38), 4), # Half-wave cavity spacer (2L)
+            "thickness_design_mode": "Normal incidence 0 deg QWOT/HWOT without 45 deg angle compensation",
+            "incidence_angle_deg": 45.0
+        },
+        "polarization_support": ["TE", "TM"],
+        "ambient": {"name": "Air", "n": 1.0},
+        "layers": layer_stack_info,
+        "substrate": {"name": "Glass", "n": 1.52},
+        "wavelength_nm": [round(float(x), 2) for x in wl],
+        "TE": {
+            "R": [round(float(x), 6) for x in r_te],
+            "T": [round(float(x), 6) for x in t_te],
+            "A": [round(float(x), 6) for x in a_te]
+        },
+        "TM": {
+            "R": [round(float(x), 6) for x in r_tm],
+            "T": [round(float(x), 6) for x in t_tm],
+            "A": [round(float(x), 6) for x in a_tm]
+        },
+        "design_point_550nm": {
+            "TE": {
+                "R": round(float(r_te[idx_550]), 6),
+                "T": round(float(t_te[idx_550]), 6),
+                "A": round(float(a_te[idx_550]), 6)
+            },
+            "TM": {
+                "R": round(float(r_tm[idx_550]), 6),
+                "T": round(float(t_tm[idx_550]), 6),
+                "A": round(float(a_tm[idx_550]), 6)
+            }
+        },
+        "resonance_metrics": {
+            "TE": {
+                "transmission_peak": round(float(t_te[idx_te_max]), 6),
+                "peak_wavelength_nm": round(float(wl[idx_te_max]), 1),
+                "reflection_at_peak": round(float(r_te[idx_te_max]), 6),
+                "absorption_at_peak": round(float(a_te[idx_te_max]), 6)
+            },
+            "TM": {
+                "transmission_peak": round(float(t_tm[idx_tm_max]), 6),
+                "peak_wavelength_nm": round(float(wl[idx_tm_max]), 1),
+                "reflection_at_peak": round(float(r_tm[idx_tm_max]), 6),
+                "absorption_at_peak": round(float(a_tm[idx_tm_max]), 6)
+            }
+        },
+        "phase_data_status": "NOT_AVAILABLE",
+        "fwhm_status": "NOT_AVAILABLE",
+        "input_parameter_hash": compute_hash(input_params)
+    }
+
+    data["result_hash"] = compute_hash(data)
+    out_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"[export] Successfully exported fp_filter results -> {out_file}")
+
+
 if __name__ == "__main__":
     export_single_ar()
     export_bragg_reflector()
+    export_fp_filter()

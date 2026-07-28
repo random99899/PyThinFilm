@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1B).
+"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1C).
 
 Validates:
 1. ID uniqueness across all registered entries.
@@ -72,7 +72,7 @@ def validate_registry():
     cases = data.get("cases", [])
 
     print("=" * 65)
-    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1B bragg_reflector)")
+    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1C fp_filter)")
     print("=" * 65)
 
     # 1. Entry Count Checks
@@ -133,7 +133,7 @@ def validate_registry():
     python_export_verified_count = sum(1 for c in cases if c.get("python_export_status") == "VERIFIED")
 
     print("\nEvidence-Backed Status Metrics Breakdown:")
-    print(f"  - geometry_verified_count:             {geometry_verified_count} (single_ar, bragg_reflector)")
+    print(f"  - geometry_verified_count:             {geometry_verified_count} (single_ar, bragg_reflector, fp_filter)")
     print(f"  - geometry_ready_count:                {geometry_ready_count}")
     print(f"  - geometry_mismatch_count:             {geometry_mismatch_count}")
     print(f"  - geometry_not_audited_count:          {geometry_not_audited_count}")
@@ -141,16 +141,17 @@ def validate_registry():
     print(f"  - physics_data_ready_count:            {physics_data_ready_count}")
     print(f"  - illustrative_only_count:             {illustrative_only_count}")
     print(f"  - external_data_required_count:        {external_data_required_count}")
-    print(f"  - migration_verified_count:            {migration_verified_count} (single_ar, bragg_reflector)")
+    print(f"  - migration_verified_count:            {migration_verified_count} (single_ar, bragg_reflector, fp_filter)")
     print(f"  - ready_for_migration_count:           {ready_for_migration_count}")
     print(f"  - prototype_only_count:                {prototype_only_count}")
     print(f"  - pending_engine_migration_count:      {pending_migration_count}")
     print(f"  - frontend_binding_passed_count:       {frontend_passed_count}")
     print(f"  - python_export_verified_count:        {python_export_verified_count}")
 
-    # Assert exactly 2 migrated cases (single_ar, bragg_reflector)
-    assert migration_verified_count == 2, f"Expected 2 MIGRATION_VERIFIED cases, got {migration_verified_count}"
-    assert frontend_passed_count == 2, f"Expected 2 frontend_binding PASSED cases, got {frontend_passed_count}"
+    # Assert exactly 3 migrated cases (single_ar, bragg_reflector, fp_filter)
+    assert migration_verified_count == 3, f"Expected 3 MIGRATION_VERIFIED cases, got {migration_verified_count}"
+    assert frontend_passed_count == 3, f"Expected 3 frontend_binding PASSED cases, got {frontend_passed_count}"
+    assert geometry_mismatch_count == 0, f"Expected 0 GEOMETRY_MISMATCH cases after resolving fp_filter, got {geometry_mismatch_count}"
 
     # 3. Schema Completeness & File Existence Check
     errors = []
