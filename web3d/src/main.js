@@ -1,14 +1,14 @@
 import { SceneManager } from "./core/SceneManager.js";
 import { CameraManager } from "./core/CameraManager.js";
 import { RendererLifecycle } from "./core/RendererLifecycle.js";
-import { LayerStackBuilder } from "./core/LayerStackBuilder.js";
-import { WavePathBuilder } from "./core/WavePathBuilder.js";
-import { PolarizationRenderer } from "./core/PolarizationRenderer.js";
-import { AnimationController } from "./core/AnimationController.js";
 import { ResourceDisposer } from "./core/ResourceDisposer.js";
+
+import { SingleInterfaceTemplate } from "./templates/single-interface.js";
+import { PeriodicStackTemplate } from "./templates/periodic-stack.js";
 
 import { loadCaseRegistry } from "./data/registryLoader.js";
 import { validateCaseConfig } from "./data/caseConfigValidator.js";
+import { loadCaseResult } from "./data/caseResultLoader.js";
 
 import { renderCaseSelector } from "./ui/caseSelector.js";
 import { renderParameterPanel } from "./ui/parameterPanel.js";
@@ -21,20 +21,22 @@ class App {
     this.container = document.querySelector("#canvas-container");
     this.registry = null;
     this.currentCaseConfig = null;
+    this.currentCaseResult = null;
     
     this.sceneManager = null;
     this.cameraManager = null;
     this.rendererLifecycle = null;
-    this.animationController = new AnimationController();
 
-    this.currentObjects = {
-      layers: null,
-      rays: null,
-      polarization: null,
-    };
+    this.currentTemplateInstance = null;
+    this.currentTemplateGroup = null;
 
     this.isExploded = false;
     this.currentPolarization = "TE";
+
+    this.templateMap = {
+      "single-interface": SingleInterfaceTemplate,
+      "periodic-stack": PeriodicStackTemplate,
+    };
   }
 
   async init() {
@@ -47,7 +49,7 @@ class App {
       
       // Load first case by default
       if (this.registry.cases && this.registry.cases.length > 0) {
-        this.loadCase(this.registry.cases[0].id);
+        await this.loadCase(this.registry.cases[0].id);
       }
     } catch (err) {
       showErrorModal("引擎初始化失败", err.message);
@@ -67,7 +69,7 @@ class App {
     });
 
     // Start Animation Render Loop
-    this.rendererLifecycle.startLoop((timestamp) => {
+    this.rendererLifecycle.startLoop(() => {
       const controls = this.cameraManager.getControls();
       if (controls) controls.update();
 
@@ -88,8 +90,7 @@ class App {
 
     // Button Events
     document.querySelector("#btn-play-pause")?.addEventListener("click", () => {
-      const isPlaying = this.animationController.togglePlayPause();
-      console.log("Animation playing:", isPlaying);
+      console.log("Animation playing toggled");
     });
 
     document.querySelector("#btn-reset-view")?.addEventListener("click", () => {
@@ -98,9 +99,7 @@ class App {
 
     document.querySelector("#btn-toggle-pol")?.addEventListener("click", () => {
       this.currentPolarization = this.currentPolarization === "TE" ? "TM" : "TE";
-      if (this.currentObjects.polarization) {
-        this.currentObjects.polarization.setPolarization(this.currentPolarization);
-      }
+      this.rebuildSceneObjects();
     });
 
     document.querySelector("#btn-explode-layers")?.addEventListener("click", () => {
@@ -109,7 +108,7 @@ class App {
     });
   }
 
-  loadCase(caseId) {
+  async loadCase(caseId) {
     const caseConfig = this.registry.cases.find((c) => c.id === caseId);
     if (!caseConfig) {
       showErrorModal("无效案例", `找不到 ID 为 ${caseId} 的案例配置。`);
@@ -122,10 +121,24 @@ class App {
       return;
     }
 
-    // Clean dispose previous objects
+    // Check template mapping existence
+    const TemplateClass = this.templateMap[caseConfig.visualization_template];
+    if (!TemplateClass) {
+      showErrorModal("未接入 3D 模板", `模板 '${caseConfig.visualization_template}' 尚未接入统一 Web3D 引擎。`);
+      return;
+    }
+
+    // Load case result JSON
+    const resultRes = await loadCaseResult(caseId);
+    if (!resultRes.available && caseConfig.migration_status === "MIGRATION_VERIFIED") {
+      showErrorModal("数据缺失", `案例 '${caseId}' 缺失 Python 计算导出 JSON 文件 (${resultRes.reason})。`);
+      return;
+    }
+
     this.disposeCurrentObjects();
 
     this.currentCaseConfig = caseConfig;
+    this.currentCaseResult = resultRes.data;
 
     // Update UI Panels
     renderParameterPanel(document.querySelector("#parameter-panel"), caseConfig);
@@ -143,14 +156,15 @@ class App {
 
   disposeCurrentObjects() {
     const scene = this.sceneManager.getScene();
-    Object.keys(this.currentObjects).forEach((key) => {
-      if (this.currentObjects[key]) {
-        const obj = this.currentObjects[key].group || this.currentObjects[key];
-        ResourceDisposer.disposeObject(obj);
-        scene.remove(obj);
-        this.currentObjects[key] = null;
-      }
-    });
+    if (this.currentTemplateInstance) {
+      this.currentTemplateInstance.dispose();
+      this.currentTemplateInstance = null;
+    }
+    if (this.currentTemplateGroup) {
+      ResourceDisposer.disposeObject(this.currentTemplateGroup);
+      scene.remove(this.currentTemplateGroup);
+      this.currentTemplateGroup = null;
+    }
   }
 
   rebuildSceneObjects() {
@@ -158,32 +172,18 @@ class App {
 
     if (!this.currentCaseConfig) return;
 
+    const TemplateClass = this.templateMap[this.currentCaseConfig.visualization_template];
+    if (!TemplateClass) return;
+
     const scene = this.sceneManager.getScene();
 
-    // 1. Build Layers
-    const mockLayers = [
-      { material: "Air", thickness_nm: 0 },
-      { material: "SiO2", thickness_nm: 120 },
-      { material: "TiO2", thickness_nm: 80 },
-      { material: "Glass", thickness_nm: 500 },
-    ];
-    const layerBuilder = new LayerStackBuilder();
-    const layersMesh = layerBuilder.buildStack(mockLayers, this.isExploded);
-    scene.add(layersMesh);
-    this.currentObjects.layers = layersMesh;
+    this.currentTemplateInstance = new TemplateClass(this.container);
+    this.currentTemplateGroup = this.currentTemplateInstance.build(this.currentCaseResult, {
+      isExploded: this.isExploded,
+      polarization: this.currentPolarization,
+    });
 
-    // 2. Build Rays
-    const waveBuilder = new WavePathBuilder();
-    const raysMesh = waveBuilder.buildRays(45);
-    scene.add(raysMesh);
-    this.currentObjects.rays = raysMesh;
-
-    // 3. Build Polarization Vector
-    const polRenderer = new PolarizationRenderer();
-    polRenderer.setPolarization(this.currentPolarization);
-    const polMesh = polRenderer.getGroup();
-    scene.add(polMesh);
-    this.currentObjects.polarization = polRenderer;
+    scene.add(this.currentTemplateGroup);
   }
 }
 

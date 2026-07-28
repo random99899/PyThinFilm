@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Export script for PyThinFilm 3D Visualization cases (Stage B.1B).
+"""Export script for PyThinFilm 3D Visualization cases (Stage B.1B.1).
 
 Exports canonical Python TMM calculation results for single_ar and bragg_reflector into web3d/public/results/<case_id>.json.
 """
@@ -117,14 +117,14 @@ def export_bragg_reflector():
     res_te = simulate_report_design("bragg_reflector", theta_deg=45.0, pol="s")
     res_tm = simulate_report_design("bragg_reflector", theta_deg=45.0, pol="p")
 
-    wl = res_te["wavelength_nm"].tolist()
-    r_te = res_te["R"].tolist()
-    t_te = res_te["T"].tolist()
-    a_te = res_te["A"].tolist()
+    wl = res_te["wavelength_nm"]
+    r_te = res_te["R"]
+    t_te = res_te["T"]
+    a_te = res_te["A"]
 
-    r_tm = res_tm["R"].tolist()
-    t_tm = res_tm["T"].tolist()
-    a_tm = res_tm["A"].tolist()
+    r_tm = res_tm["R"]
+    t_tm = res_tm["T"]
+    a_tm = res_tm["A"]
 
     # Exact Python layers extracted from res_te['layers']
     layer_stack_info = [
@@ -136,6 +136,7 @@ def export_bragg_reflector():
         "case_id": "bragg_reflector",
         "theta_deg": 45.0,
         "lambda0_nm": 550.0,
+        "design_note": "Layer thicknesses designed at 0 deg QWOT (550nm), evaluated at 45 deg oblique incidence.",
         "n_high": 2.15,
         "n_low": 1.38,
         "periods": 3.5, # 7 layers: H L H L H L H
@@ -143,7 +144,12 @@ def export_bragg_reflector():
         "n_glass": 1.52
     }
 
-    idx_550 = int(np.argmin(np.abs(res_te["wavelength_nm"] - 550.0)))
+    idx_550 = int(np.argmin(np.abs(wl - 550.0)))
+    idx_te_max = int(np.argmax(r_te))
+    idx_tm_max = int(np.argmax(r_tm))
+
+    te_stopband = wl[r_te >= 0.70]
+    tm_stopband = wl[r_tm >= 0.70]
 
     data = {
         "schema_version": "1.0.0",
@@ -154,33 +160,61 @@ def export_bragg_reflector():
         "source_symbol": "build_high_reflector_layers",
         "generated_at": datetime.datetime.now().isoformat(),
         "calculation_source": "python_export",
-        "design_wavelength_nm": 550.0,
-        "incidence_angle_deg": 45.0,
+        "design_specification": {
+            "design_wavelength_nm": 550.0,
+            "dH_nm": round(550.0 / (4 * 2.15), 4),
+            "dL_nm": round(550.0 / (4 * 1.38), 4),
+            "thickness_design_mode": "Normal incidence 0 deg QWOT without 45 deg angle compensation",
+            "incidence_angle_deg": 45.0
+        },
         "polarization_support": ["TE", "TM"],
         "ambient": {"name": "Air", "n": 1.0},
         "layers": layer_stack_info,
         "substrate": {"name": "Glass", "n": 1.52},
-        "wavelength_nm": [round(x, 2) for x in wl],
+        "wavelength_nm": [round(float(x), 2) for x in wl],
         "TE": {
-            "R": [round(x, 6) for x in r_te],
-            "T": [round(x, 6) for x in t_te],
-            "A": [round(x, 6) for x in a_te]
+            "R": [round(float(x), 6) for x in r_te],
+            "T": [round(float(x), 6) for x in t_te],
+            "A": [round(float(x), 6) for x in a_te]
         },
         "TM": {
-            "R": [round(x, 6) for x in r_tm],
-            "T": [round(x, 6) for x in t_tm],
-            "A": [round(x, 6) for x in a_tm]
+            "R": [round(float(x), 6) for x in r_tm],
+            "T": [round(float(x), 6) for x in t_tm],
+            "A": [round(float(x), 6) for x in a_tm]
         },
         "design_point_550nm": {
             "TE": {
-                "R": round(float(res_te["R"][idx_550]), 6),
-                "T": round(float(res_te["T"][idx_550]), 6),
-                "A": round(float(res_te["A"][idx_550]), 6)
+                "R": round(float(r_te[idx_550]), 6),
+                "T": round(float(t_te[idx_550]), 6),
+                "A": round(float(a_te[idx_550]), 6)
             },
             "TM": {
-                "R": round(float(res_tm["R"][idx_550]), 6),
-                "T": round(float(res_tm["T"][idx_550]), 6),
-                "A": round(float(res_tm["A"][idx_550]), 6)
+                "R": round(float(r_tm[idx_550]), 6),
+                "T": round(float(t_tm[idx_550]), 6),
+                "A": round(float(a_tm[idx_550]), 6)
+            }
+        },
+        "polarization_metrics_45deg": {
+            "threshold_R": 0.70,
+            "TE": {
+                "R_max": round(float(r_te[idx_te_max]), 6),
+                "lambda_at_R_max_nm": round(float(wl[idx_te_max]), 1),
+                "stopband_start_nm": round(float(te_stopband[0]), 1) if len(te_stopband) > 0 else None,
+                "stopband_end_nm": round(float(te_stopband[-1]), 1) if len(te_stopband) > 0 else None,
+                "stopband_width_nm": round(float(te_stopband[-1] - te_stopband[0]), 1) if len(te_stopband) > 0 else 0.0,
+                "R_at_550nm": round(float(r_te[idx_550]), 6),
+                "T_at_550nm": round(float(t_te[idx_550]), 6),
+                "A_at_550nm": round(float(a_te[idx_550]), 6)
+            },
+            "TM": {
+                "R_max": round(float(r_tm[idx_tm_max]), 6),
+                "lambda_at_R_max_nm": round(float(wl[idx_tm_max]), 1),
+                "stopband_start_nm": round(float(tm_stopband[0]), 1) if len(tm_stopband) > 0 else None,
+                "stopband_end_nm": round(float(tm_stopband[-1]), 1) if len(tm_stopband) > 0 else None,
+                "stopband_width_nm": round(float(tm_stopband[-1] - tm_stopband[0]), 1) if len(tm_stopband) > 0 else 0.0,
+                "R_at_550nm": round(float(r_tm[idx_550]), 6),
+                "T_at_550nm": round(float(t_tm[idx_550]), 6),
+                "A_at_550nm": round(float(a_tm[idx_550]), 6)
             }
         },
         "phase_data_status": "NOT_AVAILABLE",

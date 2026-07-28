@@ -2,13 +2,18 @@
   "schema_version": "1.0.0",
   "case_id": "bragg_reflector",
   "title": "Bragg反射镜/高反射膜",
-  "source_commit": "bf9ce92f406db09af03f48d3977a636e0c16e4ab",
+  "source_commit": "03c682f0ac6c566073a7b4d4e1db05aa792f352b",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_high_reflector_layers",
-  "generated_at": "2026-07-28T09:38:36.417822",
+  "generated_at": "2026-07-28T09:45:55.871174",
   "calculation_source": "python_export",
-  "design_wavelength_nm": 550.0,
-  "incidence_angle_deg": 45.0,
+  "design_specification": {
+    "design_wavelength_nm": 550.0,
+    "dH_nm": 63.9535,
+    "dL_nm": 99.6377,
+    "thickness_design_mode": "Normal incidence 0 deg QWOT without 45 deg angle compensation",
+    "incidence_angle_deg": 45.0
+  },
   "polarization_support": [
     "TE",
     "TM"
@@ -1327,7 +1332,30 @@
       "A": 0.0
     }
   },
+  "polarization_metrics_45deg": {
+    "threshold_R": 0.7,
+    "TE": {
+      "R_max": 0.963766,
+      "lambda_at_R_max_nm": 498.0,
+      "stopband_start_nm": 410.0,
+      "stopband_end_nm": 630.0,
+      "stopband_width_nm": 220.0,
+      "R_at_550nm": 0.946733,
+      "T_at_550nm": 0.053267,
+      "A_at_550nm": 0.0
+    },
+    "TM": {
+      "R_max": 0.791552,
+      "lambda_at_R_max_nm": 498.0,
+      "stopband_start_nm": 454.0,
+      "stopband_end_nm": 550.0,
+      "stopband_width_nm": 96.0,
+      "R_at_550nm": 0.706784,
+      "T_at_550nm": 0.293216,
+      "A_at_550nm": 0.0
+    }
+  },
   "phase_data_status": "NOT_AVAILABLE",
-  "input_parameter_hash": "21e0edf7041a49e8",
-  "result_hash": "8e58b51f57ff093b"
+  "input_parameter_hash": "ba3b41324e0ac2c6",
+  "result_hash": "c042f324e4bf2b74"
 }
