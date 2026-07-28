@@ -1,5 +1,4 @@
 import { defineConfig } from "vite";
-import { resolve } from "path";
 
 export default defineConfig({
   root: "./",
@@ -15,7 +14,7 @@ export default defineConfig({
     open: true,
   },
   test: {
-    environment: "node",
+    environment: "jsdom",
     globals: true,
   },
 });
