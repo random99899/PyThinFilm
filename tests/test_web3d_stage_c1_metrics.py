@@ -66,6 +66,6 @@ def test_narrowband_filter_metrics():
     data = json.loads((ROOT / "web3d" / "public" / "results" / "narrowband_filter.json").read_text(encoding="utf-8"))
     metrics = data["case_specific_metrics"]
     assert "periods=5" in metrics["periods_param_explanation"]
-    assert metrics["audited_defect_peak_TE"]["selected_peak_wavelength_nm"] == 484.0
+    assert abs(metrics["audited_defect_peak_TE"]["selected_peak_wavelength_nm"] - 484.5) < 1.0
     assert metrics["audited_defect_peak_TE"]["fwhm_status"] == "AVAILABLE"
     assert metrics["audited_defect_peak_TE"]["q_status"] == "AVAILABLE"

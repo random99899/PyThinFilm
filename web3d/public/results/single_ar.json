@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "single_ar",
   "title": "单层减反射膜(任意参数)",
-  "source_commit": "023640c618606655f666fdca0b500f3f9745aac3",
+  "source_commit": "0fc324922f04347b40656dfe4658b182e1bdf160",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_single_ar_layers",
-  "generated_at": "2026-07-29T14:26:21.424923",
+  "generated_at": "2026-07-29T15:51:52.079766",
   "calculation_source": "python_export",
   "design_wavelength_nm": 550.0,
   "incidence_angle_deg": 45.0,
@@ -1279,6 +1279,10 @@
       0.0
     ]
   },
+  "energy_conservation": {
+    "max_residual": 0.0,
+    "status": "PASSED"
+  },
   "design_point_550nm": {
     "TE": {
       "R": 0.040048,
@@ -1293,5 +1297,7 @@
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "ab83debaa22a769b",
-  "result_hash": "7470a0e07646427f"
+  "physics_input_hash": "5de9ce47a4f0e2c5",
+  "physics_result_hash": "bf3de60d28950c06",
+  "result_hash": "ea41651c1720e74d"
 }

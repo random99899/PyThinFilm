@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "bragg_reflector",
   "title": "Bragg反射镜/高反射膜",
-  "source_commit": "023640c618606655f666fdca0b500f3f9745aac3",
+  "source_commit": "0fc324922f04347b40656dfe4658b182e1bdf160",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_high_reflector_layers",
-  "generated_at": "2026-07-29T14:26:21.469482",
+  "generated_at": "2026-07-29T15:51:52.101039",
   "calculation_source": "python_export",
   "physical_equivalence_group": "dbr_7layer_hlh",
   "design_specification": {
@@ -1321,6 +1321,10 @@
       0.0
     ]
   },
+  "energy_conservation": {
+    "max_residual": 0.0,
+    "status": "PASSED"
+  },
   "design_point_550nm": {
     "TE": {
       "R": 0.946733,
@@ -1384,5 +1388,7 @@
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "21e0edf7041a49e8",
-  "result_hash": "65c90d9e8a3cc031"
+  "physics_input_hash": "7da956b815f5421a",
+  "physics_result_hash": "c9b51c6444bbadc5",
+  "result_hash": "2dfc85f3897f186c"
 }

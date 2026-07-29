@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "quarter_wave_single_layer",
   "title": "四分之一波长单层减反射膜",
-  "source_commit": "023640c618606655f666fdca0b500f3f9745aac3",
+  "source_commit": "0fc324922f04347b40656dfe4658b182e1bdf160",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_quarter_wave_single_layer_layers",
-  "generated_at": "2026-07-29T14:26:21.692964",
+  "generated_at": "2026-07-29T15:51:52.233014",
   "calculation_source": "python_export",
   "visualization_template": "single-interface",
   "incidence_angle_deg": 45.0,
@@ -1303,5 +1303,7 @@
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "f0e2d57a7201bf52",
-  "result_hash": "963f0c779c2d358e"
+  "physics_input_hash": "e8dcdcb20a72366d",
+  "physics_result_hash": "bf3de60d28950c06",
+  "result_hash": "638623cd0808b27b"
 }

@@ -1582,6 +1582,25 @@ def build_fp_single_halfwave_layers(
     return left_mirror + spacer + right_mirror
 
 
+def build_narrowband_filter_layers(
+    lambda0_nm: float = 550.0,
+    n_high: complex = 2.15,
+    n_low: complex = 1.38,
+    periods: int = 4,
+    spacer_kind: str = "L",
+) -> List[LayerSpec]:
+    """Build the canonical 17-layer narrowband filter: (HL)^4 C (LH)^4.
+
+    Default periods=4 gives 4 HL pairs on each side of the cavity spacer,
+    yielding 17 total layers and ~3x narrower linewidth compared to the
+    13-layer fp_single_halfwave (periods=3).
+    """
+    return build_fp_single_halfwave_layers(
+        lambda0_nm=lambda0_nm, n_high=n_high, n_low=n_low, periods=periods, spacer_kind=spacer_kind
+    )
+
+
+
 def build_fp_double_halfwave_layers(
     lambda0_nm: float,
     n_high: complex,

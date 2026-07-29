@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "quarter_wave_stack",
   "title": "四分之一波长堆栈",
-  "source_commit": "023640c618606655f666fdca0b500f3f9745aac3",
+  "source_commit": "0fc324922f04347b40656dfe4658b182e1bdf160",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_quarter_wave_stack_layers",
-  "generated_at": "2026-07-29T14:26:21.763728",
+  "generated_at": "2026-07-29T15:51:52.314454",
   "calculation_source": "python_export",
   "visualization_template": "periodic-stack",
   "incidence_angle_deg": 45.0,
@@ -1368,5 +1368,7 @@
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "3376f177fa827b59",
-  "result_hash": "5826df65970598ae"
+  "physics_input_hash": "e80431635b918f87",
+  "physics_result_hash": "c9b51c6444bbadc5",
+  "result_hash": "89d70e80bdfa6efb"
 }

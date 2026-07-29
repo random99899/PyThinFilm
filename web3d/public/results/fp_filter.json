@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "fp_filter",
   "title": "F-P干涉滤光片/窄带滤光片",
-  "source_commit": "023640c618606655f666fdca0b500f3f9745aac3",
+  "source_commit": "0fc324922f04347b40656dfe4658b182e1bdf160",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_fp_single_halfwave_layers",
-  "generated_at": "2026-07-29T14:26:21.531465",
+  "generated_at": "2026-07-29T15:51:52.133553",
   "calculation_source": "python_export",
   "physical_equivalence_group": "fp_13layer_defect_cavity",
   "design_specification": {
@@ -2734,7 +2734,64 @@
     "deviation_TE_nm": 11.7,
     "deviation_TM_nm": 13.7
   },
+  "energy_conservation": {
+    "max_residual": 0.0,
+    "status": "PASSED"
+  },
+  "case_specific_metrics": {
+    "audited_linewidth_TE": {
+      "polarization": "s",
+      "peak_wavelength_nm": 484.22,
+      "peak_transmission": 0.904802,
+      "reflection_at_peak": 0.095198,
+      "absorption_at_peak": 0.0,
+      "prominence": 0.860332,
+      "left_background": 0.046349,
+      "right_background": 0.04447,
+      "background_level": 0.04447,
+      "half_level": 0.474636,
+      "left_half_crossing_nm": 481.059,
+      "right_half_crossing_nm": 487.371,
+      "fwhm_status": "AVAILABLE",
+      "fwhm_nm": 6.3118,
+      "q_status": "AVAILABLE",
+      "q_factor": 76.72,
+      "zero_background_approximation_valid": false,
+      "fine_grid_step_nm": 0.01,
+      "fine_grid_span_nm": [
+        469.2,
+        499.2
+      ]
+    },
+    "audited_linewidth_TM": {
+      "polarization": "p",
+      "peak_wavelength_nm": 486.1,
+      "peak_transmission": 0.990916,
+      "reflection_at_peak": 0.009084,
+      "absorption_at_peak": 0.0,
+      "prominence": 0.660174,
+      "left_background": 0.332773,
+      "right_background": 0.330743,
+      "background_level": 0.330743,
+      "half_level": 0.66083,
+      "left_half_crossing_nm": 478.829,
+      "right_half_crossing_nm": 493.377,
+      "fwhm_status": "AVAILABLE",
+      "fwhm_nm": 14.5475,
+      "q_status": "AVAILABLE",
+      "q_factor": 33.41,
+      "zero_background_approximation_valid": false,
+      "fine_grid_step_nm": 0.01,
+      "fine_grid_span_nm": [
+        471.1,
+        501.1
+      ]
+    },
+    "resonance_validation_status": "PASSED"
+  },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "a6ce3935dbf1eb03",
-  "result_hash": "4910c2fd396dcd6d"
+  "physics_input_hash": "417c1faf002af1e0",
+  "physics_result_hash": "34b0e35acb349932",
+  "result_hash": "806f972a30752ef9"
 }
