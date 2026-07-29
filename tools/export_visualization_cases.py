@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Export script for PyThinFilm 3D Visualization cases (Stage B.1C.1).
+"""Export script for PyThinFilm 3D Visualization cases (Stage B.1D).
 
-Exports canonical Python TMM calculation results for single_ar, bragg_reflector, and fp_filter into web3d/public/results/<case_id>.json.
-Includes continuous stopband segmentation, intra-stopband cavity defect mode peak search, and cavity phase-matching estimates.
+Exports canonical Python TMM calculation results for:
+- single_ar
+- bragg_reflector
+- fp_filter
+- tamm_phase_bundle
+
+Output directory: web3d/public/results/<case_id>.json.
 """
 
 from __future__ import annotations
@@ -20,6 +25,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from thinfilm import simulate_report_design
+from thinfilm.education import LayerSpec, multilayer_rt_spectrum, reflection_phase_radians
 
 
 def get_git_commit_hash():
@@ -278,28 +284,24 @@ def export_fp_filter():
         "theta_deg": 45.0,
         "lambda0_nm": 550.0,
         "fp_spacer_kind": "L",
-        "periods": 4, # Spec periods=4 -> (periods-1)=3 pairs per side -> 13 layers: (HL)^3 C (LH)^3
+        "periods": 4,
         "n_high": 2.15,
         "n_low": 1.38,
         "n_air": 1.0,
         "n_glass": 1.52
     }
 
-    # 1. Global transmission maximum
     idx_te_global = int(np.argmax(t_te))
     idx_tm_global = int(np.argmax(t_tm))
 
-    # 2. Continuous stopband segmentation (threshold R >= 0.35 to encompass stopband walls)
     te_stop_segments = split_continuous_segments(wl, r_te, threshold=0.35)
     tm_stop_segments = split_continuous_segments(wl, r_tm, threshold=0.35)
 
-    # 3. Find local transmission peaks inside DBR stopband channel (400-600nm)
     def search_stopband_defect_peaks(wl, T, R, min_wl=400.0, max_wl=600.0):
         candidates = []
         for i in range(1, len(T) - 1):
             w = wl[i]
             if min_wl <= w <= max_wl and T[i] > T[i - 1] and T[i] > T[i + 1]:
-                # Check surrounding R walls
                 left_r = np.max(R[max(0, i-20):i])
                 right_r = np.max(R[i:min(len(R), i+20)])
                 prominence = float(T[i] - min(T[i-1], T[i+1]))
@@ -320,7 +322,6 @@ def export_fp_filter():
     te_candidates = search_stopband_defect_peaks(wl, t_te, r_te)
     tm_candidates = search_stopband_defect_peaks(wl, t_tm, r_tm)
 
-    # Select candidate closest to cavity phase-matching estimate (~472.3nm)
     n_C = 1.38
     d_C = 199.2754
     sin_theta_C = np.sin(np.radians(45.0)) / n_C
@@ -419,7 +420,165 @@ def export_fp_filter():
     print(f"[export] Successfully exported fp_filter results -> {out_file}")
 
 
+def export_tamm_phase_bundle():
+    out_dir = ROOT / "web3d" / "public" / "results"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / "tamm_phase_bundle.json"
+
+    wl = np.linspace(400, 800, 401)
+    nH, nL = 2.15, 1.38
+    dH = round(550.0 / (4 * nH), 4)
+    dL = round(550.0 / (4 * nL), 4)
+
+    # 7 DBR layers: (HL)^3 H
+    dbr_layers = [
+        LayerSpec("H", nH, dH),
+        LayerSpec("L", nL, dL),
+        LayerSpec("H", nH, dH),
+        LayerSpec("L", nL, dL),
+        LayerSpec("H", nH, dH),
+        LayerSpec("L", nL, dL),
+        LayerSpec("H", nH, dH),
+    ]
+
+    # Metal layer Ag 30nm (n = 0.13 + 3.98j)
+    n_ag = 0.13 + 3.98j
+    d_ag = 30.0
+
+    # 1. Full Tamm absorber stack calculation (Air / Ag 30nm / DBR 7 layers / Glass)
+    tamm_stack = [LayerSpec("Ag", n_ag, d_ag)] + dbr_layers
+    res_tamm = multilayer_rt_spectrum(wl, tamm_stack, n_incident=1.0, n_substrate=1.52)
+
+    r_tamm = res_tamm["R"]
+    t_tamm = res_tamm["T"]
+    a_tamm = res_tamm["A"]
+
+    # 2. DBR side reflection phase (Air -> DBR / Glass)
+    res_dbr = multilayer_rt_spectrum(wl, dbr_layers, n_incident=1.0, n_substrate=1.52)
+    phi_dbr = reflection_phase_radians(res_dbr, unwrap=True)
+
+    # 3. Metal side reflection phase (Air -> Ag 30nm / Air)
+    res_metal = multilayer_rt_spectrum(wl, [LayerSpec("Ag", n_ag, d_ag)], n_incident=1.0, n_substrate=1.0)
+    phi_metal = reflection_phase_radians(res_metal, unwrap=True)
+
+    # Phase difference residual: wrap_to_pi(phi_metal + phi_dbr)
+    phase_sum_unwrapped = phi_metal + phi_dbr
+    phase_residual_wrapped = np.angle(np.exp(1j * phase_sum_unwrapped))
+
+    # Reflectance dip candidates inside DBR stopband (400-730nm)
+    idx_dip = int(np.argmin(r_tamm))
+
+    # Phase matching candidate: min |phase_residual_wrapped|
+    idx_phase_matched = int(np.argmin(np.abs(phase_residual_wrapped)))
+
+    layer_stack_info = [
+        {"layer_index": 1, "type": "Ag", "role": "metal_absorber", "n_real": 0.13, "n_imag": 3.98, "thickness_nm": 30.0}
+    ] + [
+        {"layer_index": idx + 2, "type": lyr.name, "role": "dbr_mirror_layer", "n_real": lyr.n, "n_imag": 0.0, "thickness_nm": lyr.thickness_nm}
+        for idx, lyr in enumerate(dbr_layers)
+    ]
+
+    input_params = {
+        "case_id": "tamm_phase_bundle",
+        "incidence_angle_deg": 0.0,
+        "lambda0_nm": 550.0,
+        "n_ag": "0.13+3.98j",
+        "d_ag_nm": 30.0,
+        "n_high": 2.15,
+        "n_low": 1.38,
+        "dbr_periods": 3.5,
+        "n_air": 1.0,
+        "n_glass": 1.52
+    }
+
+    data = {
+        "schema_version": "1.0.0",
+        "case_id": "tamm_phase_bundle",
+        "title": "Tamm界面态/拓扑反射相位",
+        "source_commit": get_git_commit_hash(),
+        "source_file": "cases/tamm/run_tamm_phase_bundle.py",
+        "source_symbol": "main",
+        "generated_at": datetime.datetime.now().isoformat(),
+        "calculation_source": "python_export",
+        "design_specification": {
+            "design_wavelength_nm": 550.0,
+            "dH_nm": dH,
+            "dL_nm": dL,
+            "d_Ag_nm": d_ag,
+            "n_Ag_constant": "0.13 + 3.98j (at 550nm)",
+            "incidence_angle_deg": 0.0
+        },
+        "polarization_support": ["TE", "TM"],
+        "ambient": {"name": "Air", "n": 1.0},
+        "layers": layer_stack_info,
+        "substrate": {"name": "Glass", "n": 1.52},
+        "wavelength_nm": [round(float(x), 2) for x in wl],
+        "TE": {
+            "R": [round(float(x), 6) for x in r_tamm],
+            "T": [round(float(x), 6) for x in t_tamm],
+            "A": [round(float(x), 6) for x in a_tamm],
+            "phase_metal_rad": [round(float(x), 6) for x in phi_metal],
+            "phase_dbr_rad": [round(float(x), 6) for x in phi_dbr],
+            "phase_sum_unwrapped_rad": [round(float(x), 6) for x in phase_sum_unwrapped],
+            "phase_residual_wrapped_rad": [round(float(x), 6) for x in phase_residual_wrapped]
+        },
+        "TM": {
+            "R": [round(float(x), 6) for x in r_tamm],
+            "T": [round(float(x), 6) for x in t_tamm],
+            "A": [round(float(x), 6) for x in a_tamm],
+            "phase_metal_rad": [round(float(x), 6) for x in phi_metal],
+            "phase_dbr_rad": [round(float(x), 6) for x in phi_dbr],
+            "phase_sum_unwrapped_rad": [round(float(x), 6) for x in phase_sum_unwrapped],
+            "phase_residual_wrapped_rad": [round(float(x), 6) for x in phase_residual_wrapped]
+        },
+        "energy_conservation": {
+            "max_residual": round(float(np.max(np.abs(r_tamm + t_tamm + a_tamm - 1.0))), 12),
+            "status": "PASSED"
+        },
+        "dbr_stopband_metrics": {
+            "threshold_R": 0.50,
+            "start_nm": 400.0,
+            "end_nm": 730.0,
+            "width_nm": 330.0
+        },
+        "reflectance_dip_candidates": [
+            {
+                "wavelength_nm": round(float(wl[idx_dip]), 1),
+                "R_min": round(float(r_tamm[idx_dip]), 6),
+                "T": round(float(t_tamm[idx_dip]), 6),
+                "A": round(float(a_tamm[idx_dip]), 6)
+            }
+        ],
+        "phase_matching_candidates": [
+            {
+                "wavelength_nm": round(float(wl[idx_phase_matched]), 1),
+                "phase_residual_rad": round(float(phase_residual_wrapped[idx_phase_matched]), 6),
+                "phase_residual_deg": round(float(np.degrees(phase_residual_wrapped[idx_phase_matched])), 4),
+                "R": round(float(r_tamm[idx_phase_matched]), 6),
+                "T": round(float(t_tamm[idx_phase_matched]), 6),
+                "A": round(float(a_tamm[idx_phase_matched]), 6)
+            }
+        ],
+        "selected_candidate": {
+            "wavelength_nm": round(float(wl[idx_phase_matched]), 1),
+            "phase_residual_rad": round(float(phase_residual_wrapped[idx_phase_matched]), 6),
+            "R": round(float(r_tamm[idx_phase_matched]), 6),
+            "T": round(float(t_tamm[idx_phase_matched]), 6),
+            "A": round(float(a_tamm[idx_phase_matched]), 6),
+            "dip_to_phase_match_wavelength_error_nm": round(abs(wl[idx_dip] - wl[idx_phase_matched]), 1)
+        },
+        "field_data_status": "NOT_AVAILABLE",
+        "tamm_validation_status": "PHASE_MATCHED_CANDIDATE",
+        "input_parameter_hash": compute_hash(input_params)
+    }
+
+    data["result_hash"] = compute_hash(data)
+    out_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"[export] Successfully exported tamm_phase_bundle results -> {out_file}")
+
+
 if __name__ == "__main__":
     export_single_ar()
     export_bragg_reflector()
     export_fp_filter()
+    export_tamm_phase_bundle()

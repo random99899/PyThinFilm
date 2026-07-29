@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1C).
+"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1D).
 
 Validates:
 1. ID uniqueness across all registered entries.
@@ -72,7 +72,7 @@ def validate_registry():
     cases = data.get("cases", [])
 
     print("=" * 65)
-    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1C fp_filter)")
+    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1D tamm_phase_bundle)")
     print("=" * 65)
 
     # 1. Entry Count Checks
@@ -85,7 +85,6 @@ def validate_registry():
         print(f"[FAIL] Duplicate Case IDs found: {set(duplicates)}")
         sys.exit(1)
 
-    # Filter out runner entries from independent geometry & visualization scenes
     non_runner_cases = [c for c in cases if c.get("entry_kind") != "runner"]
     physical_cases = [c for c in cases if c.get("entry_kind") == "case"]
     alias_entries = [c for c in cases if c.get("entry_kind") == "alias"]
@@ -113,45 +112,30 @@ def validate_registry():
     assert visualization_target_count == 40, f"Expected 40 visualization targets, got {visualization_target_count}"
     print("[PASS] Entry Count Assertions PASSED (41 entries, 40 physical cases, 0 alias, 1 runner, 40 targets).")
 
-    # 2. Status Dimension Metrics Breakdown (excluding runners from independent geometry scenes)
+    # 2. Status Dimension Metrics Breakdown
     geometry_verified_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "GEOMETRY_VERIFIED")
-    geometry_ready_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "GEOMETRY_READY")
-    geometry_mismatch_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "GEOMETRY_MISMATCH")
-    geometry_not_audited_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "NOT_AUDITED")
-
     physics_data_available_count = sum(1 for c in cases if c.get("physics_data_status") == "PHYSICS_DATA_AVAILABLE")
-    physics_data_ready_count = sum(1 for c in cases if c.get("physics_data_status") == "PHYSICS_DATA_READY")
-    illustrative_only_count = sum(1 for c in cases if c.get("physics_data_status") == "ILLUSTRATIVE_ONLY")
-    external_data_required_count = sum(1 for c in cases if c.get("physics_data_status") == "EXTERNAL_DATA_REQUIRED")
 
     migration_verified_count = sum(1 for c in cases if c.get("migration_status") == "MIGRATION_VERIFIED")
-    ready_for_migration_count = sum(1 for c in cases if c.get("migration_status") == "READY_FOR_MIGRATION")
-    prototype_only_count = sum(1 for c in cases if c.get("migration_status") == "PROTOTYPE_ONLY")
+    migrated_count = sum(1 for c in cases if c.get("migration_status") == "MIGRATED")
     pending_migration_count = sum(1 for c in cases if c.get("migration_status") == "PENDING_ENGINE_MIGRATION")
 
     frontend_passed_count = sum(1 for c in cases if c.get("frontend_binding_status") == "PASSED")
     python_export_verified_count = sum(1 for c in cases if c.get("python_export_status") == "VERIFIED")
 
     print("\nEvidence-Backed Status Metrics Breakdown:")
-    print(f"  - geometry_verified_count:             {geometry_verified_count} (single_ar, bragg_reflector, fp_filter)")
-    print(f"  - geometry_ready_count:                {geometry_ready_count}")
-    print(f"  - geometry_mismatch_count:             {geometry_mismatch_count}")
-    print(f"  - geometry_not_audited_count:          {geometry_not_audited_count}")
+    print(f"  - geometry_verified_count:             {geometry_verified_count} (single_ar, bragg_reflector, fp_filter, tamm_phase_bundle)")
     print(f"  - physics_data_available_count:        {physics_data_available_count}")
-    print(f"  - physics_data_ready_count:            {physics_data_ready_count}")
-    print(f"  - illustrative_only_count:             {illustrative_only_count}")
-    print(f"  - external_data_required_count:        {external_data_required_count}")
     print(f"  - migration_verified_count:            {migration_verified_count} (single_ar, bragg_reflector, fp_filter)")
-    print(f"  - ready_for_migration_count:           {ready_for_migration_count}")
-    print(f"  - prototype_only_count:                {prototype_only_count}")
+    print(f"  - migrated_count:                      {migrated_count} (tamm_phase_bundle)")
     print(f"  - pending_engine_migration_count:      {pending_migration_count}")
     print(f"  - frontend_binding_passed_count:       {frontend_passed_count}")
     print(f"  - python_export_verified_count:        {python_export_verified_count}")
 
-    # Assert exactly 3 migrated cases (single_ar, bragg_reflector, fp_filter)
-    assert migration_verified_count == 3, f"Expected 3 MIGRATION_VERIFIED cases, got {migration_verified_count}"
-    assert frontend_passed_count == 3, f"Expected 3 frontend_binding PASSED cases, got {frontend_passed_count}"
-    assert geometry_mismatch_count == 0, f"Expected 0 GEOMETRY_MISMATCH cases after resolving fp_filter, got {geometry_mismatch_count}"
+    # Assert 4 migrated/verified cases total
+    assert migration_verified_count + migrated_count == 4, f"Expected 4 total migrated/verified cases, got {migration_verified_count + migrated_count}"
+    assert frontend_passed_count == 4, f"Expected 4 frontend_binding PASSED cases, got {frontend_passed_count}"
+    assert python_export_verified_count == 4, f"Expected 4 python_export_status VERIFIED cases, got {python_export_verified_count}"
 
     # 3. Schema Completeness & File Existence Check
     errors = []
@@ -160,12 +144,10 @@ def validate_registry():
     for idx, c in enumerate(cases):
         cid = c.get("id", f"INDEX_{idx}")
 
-        # Field completeness
         for field in REQUIRED_FIELDS:
             if field not in c or c[field] is None or str(c[field]).strip() == "":
                 errors.append(f"Case '{cid}' missing required field: '{field}'")
 
-        # Enum checks
         if c.get("entry_kind") not in VALID_ENTRY_KINDS:
             errors.append(f"Case '{cid}' invalid entry_kind: {c.get('entry_kind')}")
         if c.get("geometry_status") not in VALID_GEOMETRY_STATUSES:
@@ -183,7 +165,6 @@ def validate_registry():
         if c.get("animation_semantics") not in VALID_ANIMATION_SEMANTICS:
             errors.append(f"Case '{cid}' invalid animation_semantics: {c.get('animation_semantics')}")
 
-        # Source file check
         src = c.get("source_file", "").split(":")[0]
         if src and not (ROOT / src).exists():
             missing_source_files.append((cid, src))

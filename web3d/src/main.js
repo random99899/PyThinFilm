@@ -6,6 +6,7 @@ import { ResourceDisposer } from "./core/ResourceDisposer.js";
 import { SingleInterfaceTemplate } from "./templates/single-interface.js";
 import { PeriodicStackTemplate } from "./templates/periodic-stack.js";
 import { DefectCavityTemplate } from "./templates/defect-cavity.js";
+import { MetalDbrInterfaceTemplate } from "./templates/metal-dbr-interface.js";
 
 import { loadCaseRegistry } from "./data/registryLoader.js";
 import { validateCaseConfig } from "./data/caseConfigValidator.js";
@@ -38,6 +39,7 @@ class App {
       "single-interface": SingleInterfaceTemplate,
       "periodic-stack": PeriodicStackTemplate,
       "defect-cavity": DefectCavityTemplate,
+      "metal-dbr-interface": MetalDbrInterfaceTemplate,
     };
   }
 
@@ -132,7 +134,7 @@ class App {
 
     // Load case result JSON
     const resultRes = await loadCaseResult(caseId);
-    if (!resultRes.available && caseConfig.migration_status === "MIGRATION_VERIFIED") {
+    if (!resultRes.available && (caseConfig.migration_status === "MIGRATION_VERIFIED" || caseConfig.migration_status === "MIGRATED")) {
       showErrorModal("数据缺失", `案例 '${caseId}' 缺失 Python 计算导出 JSON 文件 (${resultRes.reason})。`);
       return;
     }
