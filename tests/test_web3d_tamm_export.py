@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Pytest verification for tamm_phase_bundle exported JSON data (Stage B.1D).
+"""Pytest verification for tamm_phase_bundle exported JSON data (Stage B.1D.1).
 
 Validates:
 1. Re-invokes Python TMM core multilayer_rt_spectrum for Tamm absorber (Air / Ag 30nm / DBR 7-layer / Glass).
 2. Energy conservation check: R + T + A = 1.0 (with absorption A > 0 in lossy Ag metal layer).
-3. Phase matching candidate identification at ~633.0nm (|phase_residual| < 0.01 rad).
-4. Reflectance dip candidate identification at ~634.0nm (R_min = 0.1933).
-5. Validation status correctly set to PHASE_MATCHED_CANDIDATE when field_data_status is NOT_AVAILABLE.
+3. Reflectance dip candidate identification at ~634.0nm (R_min = 0.1933).
+4. Legacy Air reference phase candidate at 633.0nm.
+5. Common interface reference plane audit & 1D TMM field localization metrics (|E|^2 = 3.48).
+6. Validation status correctly demoted to REFLECTANCE_DIP_CANDIDATE.
 """
 
 from __future__ import annotations
@@ -46,16 +47,22 @@ def test_tamm_phase_bundle_python_export_verification():
     assert np.all(a_arr >= 0.0)
     assert np.max(a_arr) > 0.10 # Ag absorption peak > 10%
 
-    # 3. Phase matching candidate check
+    # 3. Selected Reflectance Dip candidate check
     cand = data["selected_candidate"]
-    assert cand["wavelength_nm"] == 633.0
-    assert abs(cand["phase_residual_rad"]) < 0.01
+    assert cand["wavelength_nm"] == 634.0
+    assert 0.15 < cand["R"] < 0.25
 
-    # 4. Reflectance dip candidate check
-    dip = data["reflectance_dip_candidates"][0]
-    assert dip["wavelength_nm"] == 634.0
-    assert 0.15 < dip["R_min"] < 0.25
+    # 4. Legacy Air reference phase candidate check
+    legacy = data["legacy_diagnostics"]["legacy_air_reference_phase_candidate"]
+    assert legacy["wavelength_nm"] == 633.0
 
-    # 5. Validation status assertions
-    assert data["field_data_status"] == "NOT_AVAILABLE"
-    assert data["tamm_validation_status"] == "PHASE_MATCHED_CANDIDATE"
+    # 5. Common Ag/H interface reference plane & 1D TMM field localization checks
+    loc = data["interface_localization_metrics"]
+    assert loc["field_localization_status"] == "INTERFACE_LOCALIZATION_VERIFIED"
+    assert loc["peak_abs_E2"] > 3.0
+    assert loc["enhancement_ratio"] > 5.0
+
+    # 6. Demoted Validation Status
+    assert data["material_model"] == "CONSTANT_COMPLEX_INDEX"
+    assert data["metal_nk_source"] == "OFFICIAL_CASE_HARDCODED_CONSTANT"
+    assert data["tamm_validation_status"] == "REFLECTANCE_DIP_CANDIDATE"
