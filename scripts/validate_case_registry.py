@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1D.2).
+"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage C.1).
 
 Validates:
 1. ID uniqueness across all registered entries.
@@ -9,6 +9,7 @@ Validates:
 5. 4-dimensional status enums validation.
 6. Calculation source & animation semantics validation.
 7. Existence of source_file paths.
+8. 10 total migrated/verified cases (9 MIGRATION_VERIFIED + 1 MIGRATED).
 """
 
 from __future__ import annotations
@@ -72,7 +73,7 @@ def validate_registry():
     cases = data.get("cases", [])
 
     print("=" * 65)
-    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1D.2 tamm_phase_bundle)")
+    print("PyThinFilm 3D Case Registry Evidence Audit (Stage C.1 10-Case Batch)")
     print("=" * 65)
 
     # 1. Entry Count Checks
@@ -124,18 +125,18 @@ def validate_registry():
     python_export_verified_count = sum(1 for c in cases if c.get("python_export_status") == "VERIFIED")
 
     print("\nEvidence-Backed Status Metrics Breakdown:")
-    print(f"  - geometry_verified_count:             {geometry_verified_count} (single_ar, bragg_reflector, fp_filter, tamm_phase_bundle)")
-    print(f"  - physics_data_available_count:        {physics_data_available_count}")
-    print(f"  - migration_verified_count:            {migration_verified_count} (single_ar, bragg_reflector, fp_filter)")
+    print(f"  - geometry_verified_count:             {geometry_verified_count} (10 cases)")
+    print(f"  - physics_data_available_count:        {physics_data_available_count} (10 cases)")
+    print(f"  - migration_verified_count:            {migration_verified_count} (9 cases)")
     print(f"  - migrated_count:                      {migrated_count} (tamm_phase_bundle)")
     print(f"  - pending_engine_migration_count:      {pending_migration_count}")
-    print(f"  - frontend_binding_passed_count:       {frontend_passed_count}")
-    print(f"  - python_export_verified_count:        {python_export_verified_count}")
+    print(f"  - frontend_binding_passed_count:       {frontend_passed_count} (10 cases)")
+    print(f"  - python_export_verified_count:        {python_export_verified_count} (10 cases)")
 
-    # Assert 4 migrated/verified cases total
-    assert migration_verified_count + migrated_count == 4, f"Expected 4 total migrated/verified cases, got {migration_verified_count + migrated_count}"
-    assert frontend_passed_count == 4, f"Expected 4 frontend_binding PASSED cases, got {frontend_passed_count}"
-    assert python_export_verified_count == 4, f"Expected 4 python_export_status VERIFIED cases, got {python_export_verified_count}"
+    # Assert 10 total migrated/verified cases
+    assert migration_verified_count + migrated_count == 10, f"Expected 10 total migrated/verified cases, got {migration_verified_count + migrated_count}"
+    assert frontend_passed_count == 10, f"Expected 10 frontend_binding PASSED cases, got {frontend_passed_count}"
+    assert python_export_verified_count == 10, f"Expected 10 python_export_status VERIFIED cases, got {python_export_verified_count}"
 
     # 3. Schema Completeness & File Existence Check
     errors = []
