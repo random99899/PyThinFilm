@@ -2,14 +2,15 @@
   "schema_version": "1.0.0",
   "case_id": "tamm_phase_bundle",
   "title": "Tamm界面态/拓扑反射相位",
-  "source_commit": "ee3368df22315cb77c503bb6733e5260c855314a",
+  "source_commit": "93f19f360503f9020453dc0cd45b72df118cfd0d",
   "source_file": "cases/tamm/run_tamm_phase_bundle.py",
   "source_symbol": "main",
-  "generated_at": "2026-07-29T13:56:13.878581",
+  "generated_at": "2026-07-29T14:15:20.274308",
   "calculation_source": "python_export",
   "material_model": "CONSTANT_COMPLEX_INDEX",
   "metal_nk_source": "OFFICIAL_CASE_HARDCODED_CONSTANT",
   "dispersion_status": "NOT_MODELED",
+  "complex_index_sign_convention_note": "User/Case definition specifies Ag as n+ik (0.13+3.98j). TMM solver internally handles conjugated exp(-i wt) sign convention without requiring caller manual conjugation.",
   "validity_note": "当前案例用于固定复折射率下的 Tamm 相位教学演示，不代表 Ag 在 400-800 nm 范围内的真实色散。",
   "design_specification": {
     "design_wavelength_nm": 550.0,
@@ -6966,9 +6967,9 @@
   },
   "dbr_stopband_metrics": {
     "threshold_R": 0.5,
-    "start_nm": 400.0,
-    "end_nm": 730.0,
-    "width_nm": 330.0
+    "start_nm": 458.0,
+    "end_nm": 689.0,
+    "width_nm": 231.0
   },
   "reflectance_dip_candidates": [
     {
@@ -8723,9 +8724,9 @@
     "peak_z_nm": 77.0,
     "distance_peak_to_interface_nm": 47.0,
     "peak_layer_id": "Layer_2 (First H layer H1)",
-    "localization_note": "Candidate field peak is located inside the first H layer H1, 47 nm from the Ag/H1 interface.",
+    "localization_note": "固定复折射率模型下，场从 Ag/H 界面向银层外侧呈衰减趋势。候选波长场极大值位于紧邻金属的第一层 H1 内，距 Ag/H1 界面约 47 nm。",
     "peak_abs_E2": 6.8258,
-    "interface_window_energy_fraction": 0.3284,
+    "interface_window_field_intensity_fraction": 0.3284,
     "metal_side_decay_ratio": 0.3625,
     "dbr_period_envelope": [
       {
@@ -8765,21 +8766,27 @@
         "integrated_abs_E2": 41.5846
       }
     ],
-    "off_resonance_controls": {
+    "reference_controls": {
       "500nm": {
         "peak_abs_E2": 0.5678,
-        "enhancement_ratio": 12.02
+        "enhancement_ratio": 12.02,
+        "status": "INSIDE_STOPBAND_CONTROL"
+      },
+      "670nm": {
+        "peak_abs_E2": 1.1567,
+        "enhancement_ratio": 5.9,
+        "status": "INSIDE_STOPBAND_RIGHT_CONTROL"
       },
       "750nm": {
         "peak_abs_E2": 0.3823,
-        "enhancement_ratio": 17.85
-      },
-      "selection_reason": "Two control wavelengths chosen on left (500nm) and right (750nm) sides of DBR stopband away from reflectance dip"
+        "enhancement_ratio": 17.85,
+        "status": "LONG_WAVELENGTH_SPECTRAL_REFERENCE"
+      }
     },
     "field_localization_status": "FIELD_ENHANCEMENT_CANDIDATE"
   },
   "tamm_validation_status": "PHASE_MATCHED_LEAKY_CANDIDATE",
   "phase_validation_status": "REFERENCE_PLANE_AUDIT_COMPLETED",
   "input_parameter_hash": "c11a933225b46366",
-  "result_hash": "7032fc60d5146e15"
+  "result_hash": "a360b50230913302"
 }

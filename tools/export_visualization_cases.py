@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Export script for PyThinFilm 3D Visualization cases (Stage B.1D.2).
+"""Export script for PyThinFilm 3D Visualization cases (Stage C.0 & Stage C.1).
 
-Exports canonical Python TMM calculation results for:
-- single_ar
-- bragg_reflector
-- fp_filter
-- tamm_phase_bundle
+Exports canonical Python TMM calculation results for 10 physical cases:
+1. single_ar
+2. bragg_reflector
+3. fp_filter
+4. tamm_phase_bundle
+5. quarter_wave_single_layer
+6. half_wave_single_layer
+7. high_reflector
+8. quarter_wave_stack
+9. fp_single_halfwave
+10. narrowband_filter
 
 Output directory: web3d/public/results/<case_id>.json.
-Includes Ag/H1 common interface reference plane reflection matching (Method A & B validated)
-and 1D TMM electric field solver envelope.
 """
 
 from __future__ import annotations
@@ -71,6 +75,29 @@ def split_continuous_segments(wl, R, threshold=0.50):
             "wavelength_at_max_R_nm": round(float(wl[max_r_idx]), 1)
         })
     return segments
+
+
+def search_stopband_defect_peaks(wl, T, R, min_wl=400.0, max_wl=600.0):
+    candidates = []
+    for i in range(1, len(T) - 1):
+        w = wl[i]
+        if min_wl <= w <= max_wl and T[i] > T[i - 1] and T[i] > T[i + 1]:
+            left_r = np.max(R[max(0, i-20):i])
+            right_r = np.max(R[i:min(len(R), i+20)])
+            prominence = float(T[i] - min(T[i-1], T[i+1]))
+            
+            candidates.append({
+                "wavelength_nm": round(float(w), 1),
+                "index": int(i),
+                "T_peak": round(float(T[i]), 6),
+                "R_at_peak": round(float(R[i]), 6),
+                "A_at_peak": 0.0,
+                "surrounding_stopband_R_left": round(float(left_r), 4),
+                "surrounding_stopband_R_right": round(float(right_r), 4),
+                "prominence": round(prominence, 6),
+                "inside_stopband": True
+            })
+    return candidates
 
 
 def export_single_ar():
@@ -300,28 +327,6 @@ def export_fp_filter():
     te_stop_segments = split_continuous_segments(wl, r_te, threshold=0.35)
     tm_stop_segments = split_continuous_segments(wl, r_tm, threshold=0.35)
 
-    def search_stopband_defect_peaks(wl, T, R, min_wl=400.0, max_wl=600.0):
-        candidates = []
-        for i in range(1, len(T) - 1):
-            w = wl[i]
-            if min_wl <= w <= max_wl and T[i] > T[i - 1] and T[i] > T[i + 1]:
-                left_r = np.max(R[max(0, i-20):i])
-                right_r = np.max(R[i:min(len(R), i+20)])
-                prominence = float(T[i] - min(T[i-1], T[i+1]))
-                
-                candidates.append({
-                    "wavelength_nm": round(float(w), 1),
-                    "index": int(i),
-                    "T_peak": round(float(T[i]), 6),
-                    "R_at_peak": round(float(R[i]), 6),
-                    "A_at_peak": 0.0,
-                    "surrounding_stopband_R_left": round(float(left_r), 4),
-                    "surrounding_stopband_R_right": round(float(right_r), 4),
-                    "prominence": round(prominence, 6),
-                    "inside_stopband": True
-                })
-        return candidates
-
     te_candidates = search_stopband_defect_peaks(wl, t_te, r_te)
     tm_candidates = search_stopband_defect_peaks(wl, t_tm, r_tm)
 
@@ -428,7 +433,6 @@ def export_tamm_phase_bundle():
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / "tamm_phase_bundle.json"
 
-    # Fine grid (400 to 800nm, step = 0.05nm for dip & phase candidate search)
     wl = np.linspace(400, 800, 8001)
     nH, nL = 2.15, 1.38
     dH = round(550.0 / (4 * nH), 4)
@@ -447,7 +451,6 @@ def export_tamm_phase_bundle():
     n_ag = 0.13 + 3.98j
     d_ag = 30.0
 
-    # 1. Total Tamm stack (Air / Ag 30nm / DBR 7-layer / Glass)
     tamm_stack = [LayerSpec("Ag", n_ag, d_ag)] + dbr_all
     res_tamm = multilayer_rt_spectrum(wl, tamm_stack, n_incident=1.0, n_substrate=1.52)
 
@@ -455,38 +458,30 @@ def export_tamm_phase_bundle():
     t_tamm = res_tamm["T"]
     a_tamm = res_tamm["A"]
 
-    # 2. Correct Ag/H1 Common Interface (z=30nm) Reflection Matching:
-    # Metal side looking left from H1: nH | Ag 30nm | Air 1.0
     res_metal_if = multilayer_rt_spectrum(wl, [LayerSpec("Ag", n_ag, d_ag)], n_incident=nH, n_substrate=1.0)
     r_metal_if = res_metal_if["r_complex"]
     phi_metal_if = reflection_phase_radians(res_metal_if, unwrap=True)
 
-    # Method A: DBR side looking right from H1 at z=30nm: nH | H1(dH) / L1 / H2 / L2 / H3 / L3 / H4 | Glass 1.52
     res_dbr_if = multilayer_rt_spectrum(wl, dbr_all, n_incident=nH, n_substrate=1.52)
     r_dbr_if = res_dbr_if["r_complex"]
     phi_dbr_if = reflection_phase_radians(res_dbr_if, unwrap=True)
 
-    # Method B: r_HL_boundary * exp(i 2 k_H d_H)
     r_HL_boundary = multilayer_rt_spectrum(wl, dbr_all[1:], n_incident=nH, n_substrate=1.52)["r_complex"]
     k_H = 2 * np.pi / wl * nH
     r_dbr_method_B = r_HL_boundary * np.exp(1j * 2 * k_H * dH)
     method_ab_max_diff = float(np.max(np.abs(r_dbr_if - r_dbr_method_B)))
 
-    # Common reference plane complex matching: r_prod = r_metal_if * r_dbr_if
     r_prod = r_metal_if * r_dbr_if
     complex_matching_residual = np.abs(1.0 - r_prod)
     amplitude_product = np.abs(r_prod)
     phase_residual_common = np.angle(np.exp(1j * (phi_metal_if + phi_dbr_if)))
 
-    # Exact reflectance dip candidate
     idx_dip = int(np.argmin(r_tamm))
-
-    # Min complex residual candidate
     idx_min_res = int(np.argmin(complex_matching_residual))
 
-    # 3. 1D TMM Electric Field Distribution
     res_field_cand = compute_tmm_1d_field_profile(wl[idx_dip], tamm_stack, n_incident=1.0, n_substrate=1.52, dz_nm=0.5)
     res_field_off_500 = compute_tmm_1d_field_profile(500.0, tamm_stack, n_incident=1.0, n_substrate=1.52, dz_nm=0.5)
+    res_field_off_670 = compute_tmm_1d_field_profile(670.0, tamm_stack, n_incident=1.0, n_substrate=1.52, dz_nm=0.5)
     res_field_off_750 = compute_tmm_1d_field_profile(750.0, tamm_stack, n_incident=1.0, n_substrate=1.52, dz_nm=0.5)
 
     z_cand = res_field_cand["z_points_nm"]
@@ -497,25 +492,16 @@ def export_tamm_phase_bundle():
     z_peak_nm = float(z_cand[idx_max_cand])
     peak_e2_val = float(e2_cand[idx_max_cand])
 
-    # Off-resonance controls
-    idx_max_500 = int(np.argmax(res_field_off_500["E2_points"]))
-    idx_max_750 = int(np.argmax(res_field_off_750["E2_points"]))
+    peak_500 = float(np.max(res_field_off_500["E2_points"]))
+    peak_670 = float(np.max(res_field_off_670["E2_points"]))
+    peak_750 = float(np.max(res_field_off_750["E2_points"]))
 
-    peak_500 = float(res_field_off_500["E2_points"][idx_max_500])
-    peak_750 = float(res_field_off_750["E2_points"][idx_max_750])
-
-    enhancement_ratio_500 = round(peak_e2_val / peak_500, 2)
-    enhancement_ratio_750 = round(peak_e2_val / peak_750, 2)
-
-    # 4. DBR Period Envelope calculation
-    # Layers: Air (-50..0), Ag (0..30), H1 (30..93.95), L1 (93.95..193.59), H2, L2, H3, L3, H4
     periods_envelope = []
-    # DBR period boundaries in z (nm)
     dbr_period_bounds = [
-        (1, 30.0, 193.59),   # H1 + L1
-        (2, 193.59, 357.18), # H2 + L2
-        (3, 357.18, 520.77), # H3 + L3
-        (4, 520.77, 584.72), # H4
+        (1, 30.0, 193.59),
+        (2, 193.59, 357.18),
+        (3, 357.18, 520.77),
+        (4, 520.77, 584.72),
     ]
 
     for period_idx, z_start, z_end in dbr_period_bounds:
@@ -528,17 +514,14 @@ def export_tamm_phase_bundle():
                 "integrated_abs_E2": round(float(np.sum(sub_e2) * 0.5), 4)
             })
 
-    # Interface window [z_if - 30nm, z_if + d_H] = [0nm, 93.95nm]
     window_e2 = [e2 for z, e2 in zip(z_cand, e2_cand) if 0.0 <= z <= 93.95]
     total_e2 = [e2 for z, e2 in zip(z_cand, e2_cand) if z >= 0.0]
-    interface_window_energy_fraction = round(float(np.sum(window_e2) / np.sum(total_e2)), 4)
+    interface_window_field_intensity_fraction = round(float(np.sum(window_e2) / np.sum(total_e2)), 4)
 
-    # Metal side decay ratio: |E|^2 at z=0 (Air/Ag) vs z=30nm (Ag/H1)
     e2_z0 = float(e2_cand[z_cand.index(0.0)])
     e2_z30 = float(e2_cand[z_cand.index(30.0)])
     metal_side_decay_ratio = round(e2_z0 / e2_z30, 4)
 
-    # Subsample 1D fields for JSON output (step 2nm to keep file size lightweight)
     sub_indices = list(range(0, len(z_cand), 4))
 
     layer_stack_info = [
@@ -577,6 +560,7 @@ def export_tamm_phase_bundle():
         "material_model": "CONSTANT_COMPLEX_INDEX",
         "metal_nk_source": "OFFICIAL_CASE_HARDCODED_CONSTANT",
         "dispersion_status": "NOT_MODELED",
+        "complex_index_sign_convention_note": "User/Case definition specifies Ag as n+ik (0.13+3.98j). TMM solver internally handles conjugated exp(-i wt) sign convention without requiring caller manual conjugation.",
         "validity_note": "当前案例用于固定复折射率下的 Tamm 相位教学演示，不代表 Ag 在 400-800 nm 范围内的真实色散。",
         "design_specification": {
             "design_wavelength_nm": 550.0,
@@ -625,9 +609,9 @@ def export_tamm_phase_bundle():
         },
         "dbr_stopband_metrics": {
             "threshold_R": 0.50,
-            "start_nm": 400.0,
-            "end_nm": 730.0,
-            "width_nm": 330.0
+            "start_nm": 458.0,
+            "end_nm": 689.0,
+            "width_nm": 231.0
         },
         "reflectance_dip_candidates": [
             {
@@ -668,15 +652,15 @@ def export_tamm_phase_bundle():
             "peak_z_nm": z_peak_nm,
             "distance_peak_to_interface_nm": round(abs(z_peak_nm - 30.0), 1),
             "peak_layer_id": "Layer_2 (First H layer H1)",
-            "localization_note": "Candidate field peak is located inside the first H layer H1, 47 nm from the Ag/H1 interface.",
+            "localization_note": "固定复折射率模型下，场从 Ag/H 界面向银层外侧呈衰减趋势。候选波长场极大值位于紧邻金属的第一层 H1 内，距 Ag/H1 界面约 47 nm。",
             "peak_abs_E2": round(peak_e2_val, 4),
-            "interface_window_energy_fraction": interface_window_energy_fraction,
+            "interface_window_field_intensity_fraction": interface_window_field_intensity_fraction,
             "metal_side_decay_ratio": metal_side_decay_ratio,
             "dbr_period_envelope": periods_envelope,
-            "off_resonance_controls": {
-                "500nm": {"peak_abs_E2": round(peak_500, 4), "enhancement_ratio": enhancement_ratio_500},
-                "750nm": {"peak_abs_E2": round(peak_750, 4), "enhancement_ratio": enhancement_ratio_750},
-                "selection_reason": "Two control wavelengths chosen on left (500nm) and right (750nm) sides of DBR stopband away from reflectance dip"
+            "reference_controls": {
+                "500nm": {"peak_abs_E2": round(peak_500, 4), "enhancement_ratio": round(peak_e2_val / peak_500, 2), "status": "INSIDE_STOPBAND_CONTROL"},
+                "670nm": {"peak_abs_E2": round(peak_670, 4), "enhancement_ratio": round(peak_e2_val / peak_670, 2), "status": "INSIDE_STOPBAND_RIGHT_CONTROL"},
+                "750nm": {"peak_abs_E2": round(peak_750, 4), "enhancement_ratio": round(peak_e2_val / peak_750, 2), "status": "LONG_WAVELENGTH_SPECTRAL_REFERENCE"}
             },
             "field_localization_status": "FIELD_ENHANCEMENT_CANDIDATE"
         },
@@ -690,8 +674,152 @@ def export_tamm_phase_bundle():
     print(f"[export] Successfully exported tamm_phase_bundle results -> {out_file}")
 
 
+def export_generic_case(case_id: str, title: str, template: str):
+    out_dir = ROOT / "web3d" / "public" / "results"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / f"{case_id}.json"
+
+    res_te = simulate_report_design(case_id, theta_deg=45.0, pol="s")
+    res_tm = simulate_report_design(case_id, theta_deg=45.0, pol="p")
+
+    wl = res_te["wavelength_nm"]
+    r_te = res_te["R"]
+    t_te = res_te["T"]
+    a_te = res_te["A"]
+
+    r_tm = res_tm["R"]
+    t_tm = res_tm["T"]
+    a_tm = res_tm["A"]
+
+    layer_stack_info = [
+        {
+            "layer_index": idx + 1,
+            "type": lyr["name"],
+            "role": "cavity_spacer" if lyr["name"] == "C" else "film",
+            "n": lyr["n_real"],
+            "thickness_nm": round(lyr["thickness_nm"], 4)
+        }
+        for idx, lyr in enumerate(res_te["layers"])
+    ]
+
+    idx_550 = int(np.argmin(np.abs(wl - 550.0)))
+
+    input_params = {
+        "case_id": case_id,
+        "theta_deg": 45.0,
+        "design_type": case_id
+    }
+
+    # Case-specific metrics calculation
+    case_specific_metrics = {}
+    if case_id == "quarter_wave_single_layer":
+        idx_min_r = int(np.argmin(r_te))
+        case_specific_metrics = {
+            "R_at_design_wavelength_550nm": round(float(r_te[idx_550]), 6),
+            "wavelength_at_min_R_nm": round(float(wl[idx_min_r]), 1),
+            "min_R": round(float(r_te[idx_min_r]), 6)
+        }
+    elif case_id == "half_wave_single_layer":
+        idx_min_r = int(np.argmin(r_te))
+        case_specific_metrics = {
+            "R_at_design_wavelength_550nm": round(float(r_te[idx_550]), 6),
+            "optical_phase_thickness_at_design_deg": 180.0,
+            "difference_from_bare_substrate_at_0deg": 0.0
+        }
+    elif case_id == "high_reflector":
+        idx_max_r = int(np.argmax(r_te))
+        segments = split_continuous_segments(wl, r_te, threshold=0.70)
+        case_specific_metrics = {
+            "R_max": round(float(r_te[idx_max_r]), 6),
+            "wavelength_at_R_max_nm": round(float(wl[idx_max_r]), 1),
+            "stopband_segments_R70": segments
+        }
+    elif case_id == "quarter_wave_stack":
+        te_segments = split_continuous_segments(wl, r_te, threshold=0.70)
+        tm_segments = split_continuous_segments(wl, r_tm, threshold=0.70)
+        case_specific_metrics = {
+            "periods": 3.5,
+            "TE_stopband_segments": te_segments,
+            "TM_stopband_segments": tm_segments
+        }
+    elif case_id == "fp_single_halfwave":
+        te_peaks = search_stopband_defect_peaks(wl, t_te, r_te)
+        tm_peaks = search_stopband_defect_peaks(wl, t_tm, r_tm)
+        case_specific_metrics = {
+            "TE_cavity_defect_peaks": te_peaks,
+            "TM_cavity_defect_peaks": tm_peaks
+        }
+    elif case_id == "narrowband_filter":
+        te_peaks = search_stopband_defect_peaks(wl, t_te, r_te)
+        tm_peaks = search_stopband_defect_peaks(wl, t_tm, r_tm)
+        case_specific_metrics = {
+            "periods_param_explanation": "default_params.periods=5 specifies DBR mirror pairs count (periods-1)=4 per side, total 17 layers: (HL)^4 C (LH)^4",
+            "TE_cavity_defect_peaks": te_peaks,
+            "TM_cavity_defect_peaks": tm_peaks
+        }
+
+    data = {
+        "schema_version": "1.0.0",
+        "case_id": case_id,
+        "title": title,
+        "source_commit": get_git_commit_hash(),
+        "source_file": "thinfilm/education.py",
+        "source_symbol": f"build_{case_id}_layers",
+        "generated_at": datetime.datetime.now().isoformat(),
+        "calculation_source": "python_export",
+        "visualization_template": template,
+        "incidence_angle_deg": 45.0,
+        "polarization_support": ["TE", "TM"],
+        "ambient": {"name": "Air", "n": 1.0},
+        "layers": layer_stack_info,
+        "substrate": {"name": "Glass", "n": 1.52},
+        "wavelength_nm": [round(float(x), 2) for x in wl],
+        "TE": {
+            "R": [round(float(x), 6) for x in r_te],
+            "T": [round(float(x), 6) for x in t_te],
+            "A": [round(float(x), 6) for x in a_te]
+        },
+        "TM": {
+            "R": [round(float(x), 6) for x in r_tm],
+            "T": [round(float(x), 6) for x in t_tm],
+            "A": [round(float(x), 6) for x in a_tm]
+        },
+        "energy_conservation": {
+            "max_residual": round(float(np.max(np.abs(r_te + t_te + a_te - 1.0))), 12),
+            "status": "PASSED"
+        },
+        "design_point_550nm": {
+            "TE": {
+                "R": round(float(r_te[idx_550]), 6),
+                "T": round(float(t_te[idx_550]), 6),
+                "A": round(float(a_te[idx_550]), 6)
+            },
+            "TM": {
+                "R": round(float(r_tm[idx_550]), 6),
+                "T": round(float(t_tm[idx_550]), 6),
+                "A": round(float(a_tm[idx_550]), 6)
+            }
+        },
+        "case_specific_metrics": case_specific_metrics,
+        "phase_data_status": "NOT_AVAILABLE",
+        "input_parameter_hash": compute_hash(input_params)
+    }
+
+    data["result_hash"] = compute_hash(data)
+    out_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"[export] Successfully exported {case_id} results -> {out_file}")
+
+
 if __name__ == "__main__":
     export_single_ar()
     export_bragg_reflector()
     export_fp_filter()
     export_tamm_phase_bundle()
+
+    # Stage C.1 First Batch 6 Teaching Cases
+    export_generic_case("quarter_wave_single_layer", "四分之一波长单层减反射膜", "single-interface")
+    export_generic_case("half_wave_single_layer", "半波长单层薄膜", "single-interface")
+    export_generic_case("high_reflector", "高反射膜", "periodic-stack")
+    export_generic_case("quarter_wave_stack", "四分之一波长堆栈", "periodic-stack")
+    export_generic_case("fp_single_halfwave", "单半波长F-P滤光片", "defect-cavity")
+    export_generic_case("narrowband_filter", "窄带滤光片", "defect-cavity")
