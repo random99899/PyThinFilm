@@ -424,7 +424,7 @@
       "source_file": "thinfilm/education.py:L249",
       "source_symbol": "_get_report_chapter2_cases['fp_filter']",
       "physics_model": "TMM 谐振腔高Q透射",
-      "structure": "Air / (HL)^4 2L (LH)^4 / Glass",
+      "structure": "Air / (HL)^3 C (LH)^3 / Glass",
       "materials": [
         "Air",
         "MgF2",
@@ -442,9 +442,10 @@
       "calculation_source": "python_export",
       "python_reference_comparison": "NOT_APPLICABLE",
       "animation_semantics": "TEACHING_ILLUSTRATION",
-      "notes": "Stage B.1C FP干涉滤光片迁移完成，从 Python 正式入口 (HL)^3 C (LH)^3 13层提取结构并绑定导出结果",
+      "notes": "Stage B.1C.1 F-P 谐振物理审计通过，分离全光谱最大透射与阻带内缺陷模 484.0nm(TE)/486.0nm(TM)",
       "python_export_status": "VERIFIED",
-      "frontend_binding_status": "PASSED"
+      "frontend_binding_status": "PASSED",
+      "resonance_validation_status": "PASSED"
     },
     {
       "id": "narrowband_filter",
