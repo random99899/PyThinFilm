@@ -1,6 +1,6 @@
 # PyThinFilm 全案例 3D 动态可视化 — Stage C.1 第一批 6 个教学案例物理指标校验报告
 
-本报告记录对 **Stage C.1 第一批 6 个教学案例** 导出的专属物理指标。
+本报告记录对 **Stage C.1 第一批 6 个教学案例** 导出的专属物理指标与精细线宽审计。
 
 ---
 
@@ -11,19 +11,20 @@
    - 正入射 550nm 处达到单层最小反射率极小值。
 2. **`half_wave_single_layer` (半波长单层膜)**：
    - 550nm 处光程相位厚度 $\delta = 180^\circ$ ($\pi$ 相位厚度)；
-   - 0° 正入射 550nm 处与无膜基底反射率差异 $\Delta R = 0.000000$ (全透无膜假象)。
-3. **`high_reflector` (高反射膜)**：
+   - 0° 正入射 550nm 条件下，恢复为裸基底界面的反射状态，反射率与裸基底一致 ($R = 4.26\%$, $\Delta R = 0.0\%$)，不代表全透。
+3. **`high_reflector` (高反射膜 - 复用 `bragg_reflector` 7层结构)**：
    - 最大反射率 $R_{\max} = 96.3766\%$；
    - 包含 $R \ge 0.70$ 的主 Bragg 高反射阻带区间。
-4. **`quarter_wave_stack` (四分之一波长堆栈)**：
-   - 周期数 $N = 3.5$ 对；
+4. **`quarter_wave_stack` (四分之一波长堆栈 - (HL)^3 H)**：
+   - 结构表示：3 个完整 (HL) 周期 + 1 个终止高折射率层 H (`complete_HL_periods = 3`, `terminal_layer = "H"`, `total_coating_layers = 7`)；
    - 包含 TE/TM 分离的高反射阻带区间。
-5. **`fp_single_halfwave` (单半波长 F-P 滤光片)**：
+5. **`fp_single_halfwave` (单半波长 F-P 滤光片 - 复用 `fp_filter` 13层结构)**：
    - 13 层 $(HL)^3 C (LH)^3$ 缺陷腔结构；
-   - 阻带内缺陷模透射峰：TE $484.0\text{nm}$ ($T=90.08\%$), TM $486.0\text{nm}$ ($T=99.08\%$)。
-6. **`narrowband_filter` (窄带滤光片)**：
-   - `default_params.periods = 5` 对应两侧各 4 对 DBR 镜像，共 17 层 $(HL)^4 C (LH)^4$ 结构；
-   - 拥有极窄缺陷透射峰与极高选择性。
+   - 阻带内缺陷模透射峰：TE $484.22\text{nm}$ ($T=90.48\%$, $\text{FWHM}=6.63\text{nm}$, $Q=73.02$)。
+6. **`narrowband_filter` (窄带滤光片 - 17层高品质因子腔)**：
+   - 17 层 $(HL)^4 C (LH)^4$ (`periods=5` 对应两侧各 4 对 DBR 镜像)；
+   - TE 缺陷模：波长 $484.48\text{nm}$，峰值透射率 $T=90.49\%$，**$\text{FWHM} = 2.22\text{nm}$**，**$Q = 218.45$**（线宽压窄 ~3 倍，$Q$ 值提升 ~3 倍）；
+   - TM 缺陷模：波长 $486.77\text{nm}$，峰值透射率 $T=99.09\%$，**$\text{FWHM} = 9.43\text{nm}$**，**$Q = 51.62$**。
 
 ---
 

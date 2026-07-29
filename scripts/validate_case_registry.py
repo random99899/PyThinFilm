@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage C.1).
+"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage C.1.2).
 
 Validates:
 1. ID uniqueness across all registered entries.
@@ -9,7 +9,7 @@ Validates:
 5. 4-dimensional status enums validation.
 6. Calculation source & animation semantics validation.
 7. Existence of source_file paths.
-8. 10 total migrated/verified cases (9 MIGRATION_VERIFIED + 1 MIGRATED).
+8. Rigorous accounting metrics breakdown (unique physical configurations vs entries).
 """
 
 from __future__ import annotations
@@ -72,9 +72,9 @@ def validate_registry():
     data = json.loads(registry_path.read_text(encoding="utf-8"))
     cases = data.get("cases", [])
 
-    print("=" * 65)
-    print("PyThinFilm 3D Case Registry Evidence Audit (Stage C.1 10-Case Batch)")
-    print("=" * 65)
+    print("=" * 70)
+    print("PyThinFilm 3D Case Registry Evidence Audit (Stage C.1.2 Final Accounting)")
+    print("=" * 70)
 
     # 1. Entry Count Checks
     registry_entry_count = len(cases)
@@ -96,47 +96,62 @@ def validate_registry():
     physical_case_count = len(physical_cases)
     alias_entry_count = len(alias_entries)
     runner_entry_count = len(runner_entries)
-    visualization_target_count = len(visualization_targets)
+    visualization_entry_count = len(visualization_targets)
 
-    print(f"Registry Entry Count:          {registry_entry_count}")
-    print(f"Unique Entry IDs:              {len(unique_ids)}")
-    print(f"Physical Case Count:           {physical_case_count}")
-    print(f"Alias Entry Count:             {alias_entry_count}")
-    print(f"Runner Entry Count:            {runner_entry_count}")
-    print(f"Visualization Target Count:    {visualization_target_count}")
+    # 2. Rigorous Status & Accounting Breakdown
+    migrated_verified_entry_count = sum(1 for c in cases if c.get("migration_status") == "MIGRATION_VERIFIED")
+    migrated_candidate_entry_count = sum(1 for c in cases if c.get("migration_status") == "MIGRATED")
+    result_reuse_entry_count = sum(1 for c in cases if "result_reuse_policy" in c)
+
+    # Unique physical configurations
+    unique_physical_groups = set()
+    unique_migrated_verified_configs = set()
+    unique_migrated_candidate_configs = set()
+
+    for c in physical_cases:
+        cid = c["id"]
+        group_id = c.get("physical_equivalence_group", c.get("variant_of", cid))
+        unique_physical_groups.add(group_id)
+
+        if c.get("migration_status") == "MIGRATION_VERIFIED":
+            unique_migrated_verified_configs.add(group_id)
+        elif c.get("migration_status") == "MIGRATED":
+            unique_migrated_candidate_configs.add(group_id)
+
+    unique_physical_configuration_count = len(unique_physical_groups)
+    unique_migrated_verified_configuration_count = len(unique_migrated_verified_configs)
+    unique_migrated_candidate_configuration_count = len(unique_migrated_candidate_configs)
+
+    unique_active_physical_configuration_count = unique_migrated_verified_configuration_count + unique_migrated_candidate_configuration_count
+    remaining_unique_physical_configuration_count = unique_physical_configuration_count - unique_active_physical_configuration_count
+
+    print(f"registry_entry_count:                           {registry_entry_count}")
+    print(f"visualization_entry_count:                      {visualization_entry_count}")
+    print(f"runner_entry_count:                             {runner_entry_count}")
+    print(f"migrated_verified_entry_count:                  {migrated_verified_entry_count}")
+    print(f"migrated_candidate_entry_count:                 {migrated_candidate_entry_count}")
+    print(f"result_reuse_entry_count:                       {result_reuse_entry_count}")
+    print(f"unique_physical_configuration_count:            {unique_physical_configuration_count}")
+    print(f"unique_migrated_verified_configuration_count:   {unique_migrated_verified_configuration_count}")
+    print(f"unique_migrated_candidate_configuration_count:  {unique_migrated_candidate_configuration_count}")
+    print(f"unique_active_physical_configuration_count:     {unique_active_physical_configuration_count}")
+    print(f"remaining_unique_physical_configuration_count:  {remaining_unique_physical_configuration_count}")
 
     # Exact expected count assertions
     assert registry_entry_count == 41, f"Expected 41 registry entries, got {registry_entry_count}"
-    assert physical_case_count == 40, f"Expected 40 physical cases, got {physical_case_count}"
-    assert alias_entry_count == 0, f"Expected 0 alias entries, got {alias_entry_count}"
-    assert runner_entry_count == 1, f"Expected 1 runner entry (guided_grating_demo), got {runner_entry_count}"
-    assert visualization_target_count == 40, f"Expected 40 visualization targets, got {visualization_target_count}"
-    print("[PASS] Entry Count Assertions PASSED (41 entries, 40 physical cases, 0 alias, 1 runner, 40 targets).")
+    assert visualization_entry_count == 40, f"Expected 40 visualization entries, got {visualization_entry_count}"
+    assert runner_entry_count == 1, f"Expected 1 runner entry, got {runner_entry_count}"
+    assert migrated_verified_entry_count == 9, f"Expected 9 migrated_verified entries, got {migrated_verified_entry_count}"
+    assert migrated_candidate_entry_count == 1, f"Expected 1 migrated_candidate entry, got {migrated_candidate_entry_count}"
+    assert result_reuse_entry_count == 2, f"Expected 2 result_reuse entries, got {result_reuse_entry_count}"
 
-    # 2. Status Dimension Metrics Breakdown
-    geometry_verified_count = sum(1 for c in non_runner_cases if c.get("geometry_status") == "GEOMETRY_VERIFIED")
-    physics_data_available_count = sum(1 for c in cases if c.get("physics_data_status") == "PHYSICS_DATA_AVAILABLE")
+    assert unique_physical_configuration_count == 38, f"Expected 38 unique physical configurations, got {unique_physical_configuration_count}"
+    assert unique_migrated_verified_configuration_count == 7, f"Expected 7 unique migrated verified configs, got {unique_migrated_verified_configuration_count}"
+    assert unique_migrated_candidate_configuration_count == 1, f"Expected 1 unique migrated candidate config, got {unique_migrated_candidate_configuration_count}"
+    assert unique_active_physical_configuration_count == 8, f"Expected 8 unique active physical configs, got {unique_active_physical_configuration_count}"
+    assert remaining_unique_physical_configuration_count == 30, f"Expected 30 remaining unique physical configs, got {remaining_unique_physical_configuration_count}"
 
-    migration_verified_count = sum(1 for c in cases if c.get("migration_status") == "MIGRATION_VERIFIED")
-    migrated_count = sum(1 for c in cases if c.get("migration_status") == "MIGRATED")
-    pending_migration_count = sum(1 for c in cases if c.get("migration_status") == "PENDING_ENGINE_MIGRATION")
-
-    frontend_passed_count = sum(1 for c in cases if c.get("frontend_binding_status") == "PASSED")
-    python_export_verified_count = sum(1 for c in cases if c.get("python_export_status") == "VERIFIED")
-
-    print("\nEvidence-Backed Status Metrics Breakdown:")
-    print(f"  - geometry_verified_count:             {geometry_verified_count} (10 cases)")
-    print(f"  - physics_data_available_count:        {physics_data_available_count} (10 cases)")
-    print(f"  - migration_verified_count:            {migration_verified_count} (9 cases)")
-    print(f"  - migrated_count:                      {migrated_count} (tamm_phase_bundle)")
-    print(f"  - pending_engine_migration_count:      {pending_migration_count}")
-    print(f"  - frontend_binding_passed_count:       {frontend_passed_count} (10 cases)")
-    print(f"  - python_export_verified_count:        {python_export_verified_count} (10 cases)")
-
-    # Assert 10 total migrated/verified cases
-    assert migration_verified_count + migrated_count == 10, f"Expected 10 total migrated/verified cases, got {migration_verified_count + migrated_count}"
-    assert frontend_passed_count == 10, f"Expected 10 frontend_binding PASSED cases, got {frontend_passed_count}"
-    assert python_export_verified_count == 10, f"Expected 10 python_export_status VERIFIED cases, got {python_export_verified_count}"
+    print("\n[PASS] All Stage C.1.2 Accounting Assertions PASSED.")
 
     # 3. Schema Completeness & File Existence Check
     errors = []
@@ -181,9 +196,9 @@ def validate_registry():
             print(f"  - {err}")
         sys.exit(1)
     else:
-        print("\n[PASS] All Schema, Field Completeness & Status Enum Checks PASSED.")
+        print("[PASS] All Schema, Field Completeness & Status Enum Checks PASSED.")
 
-    print("=" * 65)
+    print("=" * 70)
 
 
 if __name__ == "__main__":

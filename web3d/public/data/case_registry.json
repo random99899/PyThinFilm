@@ -320,7 +320,12 @@
       "animation_semantics": "TEACHING_ILLUSTRATION",
       "notes": "周期数 N=6 高反射带",
       "python_export_status": "VERIFIED",
-      "frontend_binding_status": "PASSED"
+      "frontend_binding_status": "PASSED",
+      "physical_equivalence_group": "dbr_7layer_hlh",
+      "variant_of": "bragg_reflector",
+      "result_reuse_policy": "SHARED_PHYSICS_DISTINCT_PEDAGOGY",
+      "pedagogical_role": "高反射膜教学展示案例 (复用 bragg_reflector 7层物理结构)",
+      "physical_equivalence_status": "EXACT"
     },
     {
       "id": "quarter_wave_stack",
@@ -382,7 +387,8 @@
       "animation_semantics": "TEACHING_ILLUSTRATION",
       "notes": "Stage B.1B Bragg反射镜迁移完成，读取 Python TMM 45度 TE/TM 7层 (HL)^3 H 导出结果",
       "python_export_status": "VERIFIED",
-      "frontend_binding_status": "PASSED"
+      "frontend_binding_status": "PASSED",
+      "physical_equivalence_group": "dbr_7layer_hlh"
     },
     {
       "id": "fp_single_halfwave",
@@ -413,7 +419,12 @@
       "animation_semantics": "TEACHING_ILLUSTRATION",
       "notes": "单 2L 缺陷腔选频",
       "python_export_status": "VERIFIED",
-      "frontend_binding_status": "PASSED"
+      "frontend_binding_status": "PASSED",
+      "physical_equivalence_group": "fp_13layer_defect_cavity",
+      "variant_of": "fp_filter",
+      "result_reuse_policy": "SHARED_PHYSICS_DISTINCT_PEDAGOGY",
+      "pedagogical_role": "单半波长 F-P 滤光片教学展示案例 (复用 fp_filter 13层物理结构)",
+      "physical_equivalence_status": "EXACT"
     },
     {
       "id": "fp_filter",
@@ -445,7 +456,8 @@
       "notes": "Stage B.1C.1 F-P 谐振物理审计通过，分离全光谱最大透射与阻带内缺陷模 484.0nm(TE)/486.0nm(TM)",
       "python_export_status": "VERIFIED",
       "frontend_binding_status": "PASSED",
-      "resonance_validation_status": "PASSED"
+      "resonance_validation_status": "PASSED",
+      "physical_equivalence_group": "fp_13layer_defect_cavity"
     },
     {
       "id": "narrowband_filter",
