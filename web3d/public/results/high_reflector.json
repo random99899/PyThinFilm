@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "high_reflector",
   "title": "高反射膜",
-  "source_commit": "93f19f360503f9020453dc0cd45b72df118cfd0d",
+  "source_commit": "023640c618606655f666fdca0b500f3f9745aac3",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_high_reflector_layers",
-  "generated_at": "2026-07-29T14:15:20.374902",
+  "generated_at": "2026-07-29T14:26:21.737155",
   "calculation_source": "python_export",
   "visualization_template": "periodic-stack",
   "incidence_angle_deg": 45.0,
@@ -1339,6 +1339,9 @@
     }
   },
   "case_specific_metrics": {
+    "physical_equivalence_group": "dbr_7layer_hlh",
+    "variant_of": "bragg_reflector",
+    "result_reuse_policy": "SHARED_PHYSICS_DISTINCT_PEDAGOGY",
     "R_max": 0.963766,
     "wavelength_at_R_max_nm": 498.0,
     "stopband_segments_R70": [
@@ -1355,5 +1358,5 @@
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "ad03d9a45cd3cf54",
-  "result_hash": "36cb6683efb5988b"
+  "result_hash": "3e8752f6cbe627f0"
 }

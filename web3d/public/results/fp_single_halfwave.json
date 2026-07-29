@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "fp_single_halfwave",
   "title": "单半波长F-P滤光片",
-  "source_commit": "93f19f360503f9020453dc0cd45b72df118cfd0d",
+  "source_commit": "023640c618606655f666fdca0b500f3f9745aac3",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_fp_single_halfwave_layers",
-  "generated_at": "2026-07-29T14:15:20.426051",
+  "generated_at": "2026-07-29T14:26:21.810211",
   "calculation_source": "python_export",
   "visualization_template": "defect-cavity",
   "incidence_angle_deg": 45.0,
@@ -2606,6 +2606,9 @@
     }
   },
   "case_specific_metrics": {
+    "physical_equivalence_group": "fp_13layer_defect_cavity",
+    "variant_of": "fp_filter",
+    "result_reuse_policy": "SHARED_PHYSICS_DISTINCT_PEDAGOGY",
     "TE_cavity_defect_peaks": [
       {
         "wavelength_nm": 484.0,
@@ -2635,5 +2638,5 @@
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "151a6dd12ec033ef",
-  "result_hash": "183b0f8fb1faf987"
+  "result_hash": "a2e0827f297396ca"
 }

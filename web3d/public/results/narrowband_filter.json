@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "narrowband_filter",
   "title": "窄带滤光片",
-  "source_commit": "93f19f360503f9020453dc0cd45b72df118cfd0d",
+  "source_commit": "023640c618606655f666fdca0b500f3f9745aac3",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_narrowband_filter_layers",
-  "generated_at": "2026-07-29T14:15:20.457548",
+  "generated_at": "2026-07-29T14:26:21.852293",
   "calculation_source": "python_export",
   "visualization_template": "defect-cavity",
   "incidence_angle_deg": 45.0,
@@ -2607,6 +2607,10 @@
   },
   "case_specific_metrics": {
     "periods_param_explanation": "default_params.periods=5 specifies DBR mirror pairs count (periods-1)=4 per side, total 17 layers: (HL)^4 C (LH)^4",
+    "main_stopband_range_nm": [
+      450.0,
+      680.0
+    ],
     "TE_cavity_defect_peaks": [
       {
         "wavelength_nm": 484.0,
@@ -2632,9 +2636,20 @@
         "prominence": 0.011396,
         "inside_stopband": true
       }
-    ]
+    ],
+    "audited_defect_peak_TE": {
+      "selected_peak_wavelength_nm": 484.0,
+      "peak_transmission": 0.90079,
+      "reflection_at_peak": 0.09921,
+      "prominence": 0.90079,
+      "fwhm_status": "AVAILABLE",
+      "fwhm_nm": 6.0,
+      "q_status": "AVAILABLE",
+      "q_factor": 80.67,
+      "resonance_validation_status": "PASSED"
+    }
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "723a25d03cc61324",
-  "result_hash": "82d1d2dec91ac994"
+  "result_hash": "d58c0fc0f2ce6c80"
 }

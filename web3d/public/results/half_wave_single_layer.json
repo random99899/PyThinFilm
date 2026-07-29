@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "half_wave_single_layer",
   "title": "半波长单层薄膜",
-  "source_commit": "93f19f360503f9020453dc0cd45b72df118cfd0d",
+  "source_commit": "023640c618606655f666fdca0b500f3f9745aac3",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_half_wave_single_layer_layers",
-  "generated_at": "2026-07-29T14:15:20.352808",
+  "generated_at": "2026-07-29T14:26:21.714998",
   "calculation_source": "python_export",
   "visualization_template": "single-interface",
   "incidence_angle_deg": 45.0,
@@ -1297,11 +1297,15 @@
     }
   },
   "case_specific_metrics": {
-    "R_at_design_wavelength_550nm": 0.086282,
-    "optical_phase_thickness_at_design_deg": 180.0,
-    "difference_from_bare_substrate_at_0deg": 0.0
+    "R_halfwave_at_design_0deg": 0.04258,
+    "R_bare_substrate_at_design_0deg": 0.04258,
+    "delta_R_0deg": 0.0,
+    "T_halfwave_at_design_0deg": 0.95742,
+    "optical_phase_thickness_rad": 3.141593,
+    "optical_phase_thickness_deg": 180.0,
+    "physical_note": "半波膜在设计波长、正入射条件下，恢复为裸基底界面的反射状态；其反射率与无膜基底一致 (R = 4.26%)，不代表全透。"
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "82dad5299d240a2b",
-  "result_hash": "3dae23d5e9d6d55b"
+  "result_hash": "4e011a911462c8fa"
 }

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Pytest verification for tamm_phase_bundle exported JSON data (Stage B.1D.2).
+"""Pytest verification for tamm_phase_bundle exported JSON data (Stage B.1D.2 / Stage C.0 / Stage C.1.1).
 
 Validates:
 1. Re-invokes Python TMM core multilayer_rt_spectrum for Tamm absorber (Air / Ag 30nm / DBR 7-layer / Glass).
@@ -56,7 +56,7 @@ def test_tamm_phase_bundle_python_export_verification():
     loc = data["interface_localization_metrics"]
     assert loc["field_localization_status"] == "FIELD_ENHANCEMENT_CANDIDATE"
     assert loc["peak_abs_E2"] > 3.0
-    assert loc["off_resonance_controls"]["500nm"]["enhancement_ratio"] > 5.0
+    assert loc["reference_controls"]["500nm"]["enhancement_ratio"] > 5.0
 
     # 5. Correct Validation Statuses
     assert data["material_model"] == "CONSTANT_COMPLEX_INDEX"
