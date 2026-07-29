@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "fp_filter",
   "title": "F-P干涉滤光片/窄带滤光片",
-  "source_commit": "dbca933106a68a709b193c7968bcf5af64fbbf72",
+  "source_commit": "ee3368df22315cb77c503bb6733e5260c855314a",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_fp_single_halfwave_layers",
-  "generated_at": "2026-07-29T13:14:19.876563",
+  "generated_at": "2026-07-29T13:56:13.817465",
   "calculation_source": "python_export",
   "design_specification": {
     "design_wavelength_nm": 550.0,
@@ -2735,5 +2735,5 @@
   },
   "phase_data_status": "NOT_AVAILABLE",
   "input_parameter_hash": "a6ce3935dbf1eb03",
-  "result_hash": "e0e1eecd1ebf73d1"
+  "result_hash": "e435733b45e8e7b2"
 }

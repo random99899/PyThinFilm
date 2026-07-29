@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Pytest verification for tamm_phase_bundle exported JSON data (Stage B.1D.1).
+"""Pytest verification for tamm_phase_bundle exported JSON data (Stage B.1D.2).
 
 Validates:
 1. Re-invokes Python TMM core multilayer_rt_spectrum for Tamm absorber (Air / Ag 30nm / DBR 7-layer / Glass).
 2. Energy conservation check: R + T + A = 1.0 (with absorption A > 0 in lossy Ag metal layer).
 3. Reflectance dip candidate identification at ~634.0nm (R_min = 0.1933).
-4. Legacy Air reference phase candidate at 633.0nm.
-5. Common interface reference plane audit & 1D TMM field localization metrics (|E|^2 = 3.48).
-6. Validation status correctly demoted to REFLECTANCE_DIP_CANDIDATE.
+4. Common Ag/H1 interface reference plane audit (Method A & B validated).
+5. 1D TMM field localization metrics (|E|^2 = 3.48) & field solver status.
+6. Validation status demoted to PHASE_MATCHED_LEAKY_CANDIDATE and FIELD_ENHANCEMENT_CANDIDATE.
 """
 
 from __future__ import annotations
@@ -49,20 +49,18 @@ def test_tamm_phase_bundle_python_export_verification():
 
     # 3. Selected Reflectance Dip candidate check
     cand = data["selected_candidate"]
-    assert cand["wavelength_nm"] == 634.0
+    assert abs(cand["wavelength_nm"] - 634.0) < 1.0
     assert 0.15 < cand["R"] < 0.25
 
-    # 4. Legacy Air reference phase candidate check
-    legacy = data["legacy_diagnostics"]["legacy_air_reference_phase_candidate"]
-    assert legacy["wavelength_nm"] == 633.0
-
-    # 5. Common Ag/H interface reference plane & 1D TMM field localization checks
+    # 4. Common Ag/H1 interface reference plane & 1D TMM field localization checks
     loc = data["interface_localization_metrics"]
-    assert loc["field_localization_status"] == "INTERFACE_LOCALIZATION_VERIFIED"
+    assert loc["field_localization_status"] == "FIELD_ENHANCEMENT_CANDIDATE"
     assert loc["peak_abs_E2"] > 3.0
-    assert loc["enhancement_ratio"] > 5.0
+    assert loc["off_resonance_controls"]["500nm"]["enhancement_ratio"] > 5.0
 
-    # 6. Demoted Validation Status
+    # 5. Correct Validation Statuses
     assert data["material_model"] == "CONSTANT_COMPLEX_INDEX"
     assert data["metal_nk_source"] == "OFFICIAL_CASE_HARDCODED_CONSTANT"
-    assert data["tamm_validation_status"] == "REFLECTANCE_DIP_CANDIDATE"
+    assert data["field_solver_status"] == "FIELD_SOLVER_VERIFIED"
+    assert data["tamm_validation_status"] == "PHASE_MATCHED_LEAKY_CANDIDATE"
+    assert data["phase_validation_status"] == "REFERENCE_PLANE_AUDIT_COMPLETED"

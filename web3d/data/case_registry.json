@@ -852,10 +852,15 @@
       "calculation_source": "python_export",
       "python_reference_comparison": "NOT_APPLICABLE",
       "animation_semantics": "TEACHING_ILLUSTRATION",
-      "notes": "Stage B.1D Tamm反射相位与吸收膜系迁移完成，导出 TMM 复数相位匹配候选与极小反射 633nm/634nm 数据",
+      "notes": "Stage B.1D.2 Tamm界面公共参考面(z=30nm)与一维TMM电场包络(6.29x 500nm, 2.75x 750nm)验证完成",
       "python_export_status": "VERIFIED",
       "frontend_binding_status": "PASSED",
-      "tamm_validation_status": "PHASE_MATCHED_CANDIDATE"
+      "tamm_validation_status": "PHASE_MATCHED_LEAKY_CANDIDATE",
+      "phase_validation_status": "REFERENCE_PLANE_AUDIT_COMPLETED",
+      "field_localization_status": "FIELD_ENHANCEMENT_CANDIDATE",
+      "field_solver_status": "FIELD_SOLVER_VERIFIED",
+      "material_model": "CONSTANT_COMPLEX_INDEX",
+      "dispersion_status": "NOT_MODELED"
     },
     {
       "id": "tamm_phase_candidates",

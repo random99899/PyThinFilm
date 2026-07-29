@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1D).
+"""Validation and reconciliation script for PyThinFilm 3D Case Registry (Stage B.1D.2).
 
 Validates:
 1. ID uniqueness across all registered entries.
@@ -72,7 +72,7 @@ def validate_registry():
     cases = data.get("cases", [])
 
     print("=" * 65)
-    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1D tamm_phase_bundle)")
+    print("PyThinFilm 3D Case Registry Evidence Audit (Stage B.1D.2 tamm_phase_bundle)")
     print("=" * 65)
 
     # 1. Entry Count Checks

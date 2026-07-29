@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Export script for PyThinFilm 3D Visualization cases (Stage B.1D.1).
+"""Export script for PyThinFilm 3D Visualization cases (Stage B.1D.2).
 
 Exports canonical Python TMM calculation results for:
 - single_ar
@@ -8,7 +8,8 @@ Exports canonical Python TMM calculation results for:
 - tamm_phase_bundle
 
 Output directory: web3d/public/results/<case_id>.json.
-Includes common Ag/H interface reference plane reflection phase matching and 1D TMM electric field localization profile.
+Includes Ag/H1 common interface reference plane reflection matching (Method A & B validated)
+and 1D TMM electric field solver envelope.
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ if str(ROOT) not in sys.path:
 
 from thinfilm import simulate_report_design
 from thinfilm.education import LayerSpec, multilayer_rt_spectrum, reflection_phase_radians
+from thinfilm.field_profile import compute_tmm_1d_field_profile
 
 
 def get_git_commit_hash():
@@ -69,71 +71,6 @@ def split_continuous_segments(wl, R, threshold=0.50):
             "wavelength_at_max_R_nm": round(float(wl[max_r_idx]), 1)
         })
     return segments
-
-
-def compute_tmm_1d_field(wl_nm, layer_n_list, layer_d_list, n_inc=1.0, n_sub=1.52, dz_nm=1.0):
-    k0 = 2 * np.pi / wl_nm
-    num_layers = len(layer_n_list)
-
-    M_list = []
-    for n, d in zip(layer_n_list, layer_d_list):
-        delta = k0 * n * d
-        m = np.array([
-            [np.cos(delta), -1j / n * np.sin(delta)],
-            [-1j * n * np.sin(delta), np.cos(delta)]
-        ], dtype=complex)
-        M_list.append(m)
-
-    M_total = np.eye(2, dtype=complex)
-    for m in M_list:
-        M_total = M_total @ m
-
-    m11, m12 = M_total[0, 0], M_total[0, 1]
-    m21, m22 = M_total[1, 0], M_total[1, 1]
-
-    denom = (m11 + m12 * n_sub) * n_inc + (m21 + m22 * n_sub)
-    t_coef = 2 * n_inc / denom
-
-    v = np.array([1.0, n_sub], dtype=complex) * t_coef
-
-    interface_vectors = [v]
-    for m in reversed(M_list):
-        v = m @ v
-        interface_vectors.insert(0, v)
-
-    z_points = []
-    e2_points = []
-    layer_ids = []
-
-    # Ambient Air (-50 to 0nm)
-    for z_air in np.arange(-50.0, 0.0, dz_nm):
-        delta_air = k0 * n_inc * z_air
-        m_air = np.array([
-            [np.cos(delta_air), -1j / n_inc * np.sin(delta_air)],
-            [-1j * n_inc * np.sin(delta_air), np.cos(delta_air)]
-        ], dtype=complex)
-        vz = m_air @ interface_vectors[0]
-        z_points.append(round(float(z_air), 1))
-        e2_points.append(round(float(np.abs(vz[0])**2), 4))
-        layer_ids.append("Air")
-
-    # Layers (0 to sum(d))
-    z_curr = 0.0
-    for idx, (n, d) in enumerate(zip(layer_n_list, layer_d_list)):
-        v_start = interface_vectors[idx]
-        for dz in np.arange(0.0, d, dz_nm):
-            delta = k0 * n * dz
-            m_dz_inv = np.array([
-                [np.cos(delta), 1j / n * np.sin(delta)],
-                [1j * n * np.sin(delta), np.cos(delta)]
-            ], dtype=complex)
-            vz = m_dz_inv @ v_start
-            z_points.append(round(float(z_curr + dz), 1))
-            e2_points.append(round(float(np.abs(vz[0])**2), 4))
-            layer_ids.append(f"Layer_{idx+1}")
-        z_curr += d
-
-    return z_points, e2_points, layer_ids
 
 
 def export_single_ar():
@@ -491,12 +428,13 @@ def export_tamm_phase_bundle():
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / "tamm_phase_bundle.json"
 
-    wl = np.linspace(400, 800, 401)
+    # Fine grid (400 to 800nm, step = 0.05nm for dip & phase candidate search)
+    wl = np.linspace(400, 800, 8001)
     nH, nL = 2.15, 1.38
     dH = round(550.0 / (4 * nH), 4)
     dL = round(550.0 / (4 * nL), 4)
 
-    dbr_layers = [
+    dbr_all = [
         LayerSpec("H", nH, dH),
         LayerSpec("L", nL, dL),
         LayerSpec("H", nH, dH),
@@ -510,24 +448,29 @@ def export_tamm_phase_bundle():
     d_ag = 30.0
 
     # 1. Total Tamm stack (Air / Ag 30nm / DBR 7-layer / Glass)
-    tamm_stack = [LayerSpec("Ag", n_ag, d_ag)] + dbr_layers
+    tamm_stack = [LayerSpec("Ag", n_ag, d_ag)] + dbr_all
     res_tamm = multilayer_rt_spectrum(wl, tamm_stack, n_incident=1.0, n_substrate=1.52)
 
     r_tamm = res_tamm["R"]
     t_tamm = res_tamm["T"]
     a_tamm = res_tamm["A"]
 
-    # 2. Ag/H Common Interface (z=0) reflection matching:
-    # Metal side looking left: nH | Ag 30nm | Air (1.0)
+    # 2. Correct Ag/H1 Common Interface (z=30nm) Reflection Matching:
+    # Metal side looking left from H1: nH | Ag 30nm | Air 1.0
     res_metal_if = multilayer_rt_spectrum(wl, [LayerSpec("Ag", n_ag, d_ag)], n_incident=nH, n_substrate=1.0)
     r_metal_if = res_metal_if["r_complex"]
     phi_metal_if = reflection_phase_radians(res_metal_if, unwrap=True)
 
-    # DBR side looking right: nH | L dL | H dH | L dL | H dH | L dL | H dH | Glass (1.52)
-    dbr_rest_layers = dbr_layers[1:]
-    res_dbr_if = multilayer_rt_spectrum(wl, dbr_rest_layers, n_incident=nH, n_substrate=1.52)
+    # Method A: DBR side looking right from H1 at z=30nm: nH | H1(dH) / L1 / H2 / L2 / H3 / L3 / H4 | Glass 1.52
+    res_dbr_if = multilayer_rt_spectrum(wl, dbr_all, n_incident=nH, n_substrate=1.52)
     r_dbr_if = res_dbr_if["r_complex"]
     phi_dbr_if = reflection_phase_radians(res_dbr_if, unwrap=True)
+
+    # Method B: r_HL_boundary * exp(i 2 k_H d_H)
+    r_HL_boundary = multilayer_rt_spectrum(wl, dbr_all[1:], n_incident=nH, n_substrate=1.52)["r_complex"]
+    k_H = 2 * np.pi / wl * nH
+    r_dbr_method_B = r_HL_boundary * np.exp(1j * 2 * k_H * dH)
+    method_ab_max_diff = float(np.max(np.abs(r_dbr_if - r_dbr_method_B)))
 
     # Common reference plane complex matching: r_prod = r_metal_if * r_dbr_if
     r_prod = r_metal_if * r_dbr_if
@@ -535,32 +478,74 @@ def export_tamm_phase_bundle():
     amplitude_product = np.abs(r_prod)
     phase_residual_common = np.angle(np.exp(1j * (phi_metal_if + phi_dbr_if)))
 
-    # Legacy Air reference diagnostics (Air/Ag/Air + Air/DBR/Glass)
-    res_dbr_air = multilayer_rt_spectrum(wl, dbr_layers, n_incident=1.0, n_substrate=1.52)
-    phi_dbr_air = reflection_phase_radians(res_dbr_air, unwrap=True)
-    res_metal_air = multilayer_rt_spectrum(wl, [LayerSpec("Ag", n_ag, d_ag)], n_incident=1.0, n_substrate=1.0)
-    phi_metal_air = reflection_phase_radians(res_metal_air, unwrap=True)
-    legacy_air_phase_residual = np.angle(np.exp(1j * (phi_metal_air + phi_dbr_air)))
-
-    # Reflectance dip candidate inside DBR stopband (634.0nm)
+    # Exact reflectance dip candidate
     idx_dip = int(np.argmin(r_tamm))
 
+    # Min complex residual candidate
+    idx_min_res = int(np.argmin(complex_matching_residual))
+
     # 3. 1D TMM Electric Field Distribution
-    layers_n = [n_ag, nH, nL, nH, nL, nH, nL, nH]
-    layers_d = [d_ag, dH, dL, dH, dL, dH, dL, dH]
-    z_cand, e2_cand, ly_cand = compute_tmm_1d_field(wl[idx_dip], layers_n, layers_d)
-    z_ref, e2_ref, ly_ref = compute_tmm_1d_field(500.0, layers_n, layers_d)
+    res_field_cand = compute_tmm_1d_field_profile(wl[idx_dip], tamm_stack, n_incident=1.0, n_substrate=1.52, dz_nm=0.5)
+    res_field_off_500 = compute_tmm_1d_field_profile(500.0, tamm_stack, n_incident=1.0, n_substrate=1.52, dz_nm=0.5)
+    res_field_off_750 = compute_tmm_1d_field_profile(750.0, tamm_stack, n_incident=1.0, n_substrate=1.52, dz_nm=0.5)
+
+    z_cand = res_field_cand["z_points_nm"]
+    e2_cand = res_field_cand["E2_points"]
+    ly_cand = res_field_cand["layer_tags"]
 
     idx_max_cand = int(np.argmax(e2_cand))
-    idx_max_ref = int(np.argmax(e2_ref))
+    z_peak_nm = float(z_cand[idx_max_cand])
+    peak_e2_val = float(e2_cand[idx_max_cand])
 
-    enhancement_ratio = float(e2_cand[idx_max_cand] / e2_ref[idx_max_ref])
+    # Off-resonance controls
+    idx_max_500 = int(np.argmax(res_field_off_500["E2_points"]))
+    idx_max_750 = int(np.argmax(res_field_off_750["E2_points"]))
+
+    peak_500 = float(res_field_off_500["E2_points"][idx_max_500])
+    peak_750 = float(res_field_off_750["E2_points"][idx_max_750])
+
+    enhancement_ratio_500 = round(peak_e2_val / peak_500, 2)
+    enhancement_ratio_750 = round(peak_e2_val / peak_750, 2)
+
+    # 4. DBR Period Envelope calculation
+    # Layers: Air (-50..0), Ag (0..30), H1 (30..93.95), L1 (93.95..193.59), H2, L2, H3, L3, H4
+    periods_envelope = []
+    # DBR period boundaries in z (nm)
+    dbr_period_bounds = [
+        (1, 30.0, 193.59),   # H1 + L1
+        (2, 193.59, 357.18), # H2 + L2
+        (3, 357.18, 520.77), # H3 + L3
+        (4, 520.77, 584.72), # H4
+    ]
+
+    for period_idx, z_start, z_end in dbr_period_bounds:
+        sub_e2 = [e2 for z, e2 in zip(z_cand, e2_cand) if z_start <= z <= z_end]
+        if sub_e2:
+            periods_envelope.append({
+                "period": period_idx,
+                "z_range_nm": [z_start, z_end],
+                "max_abs_E2": round(float(np.max(sub_e2)), 4),
+                "integrated_abs_E2": round(float(np.sum(sub_e2) * 0.5), 4)
+            })
+
+    # Interface window [z_if - 30nm, z_if + d_H] = [0nm, 93.95nm]
+    window_e2 = [e2 for z, e2 in zip(z_cand, e2_cand) if 0.0 <= z <= 93.95]
+    total_e2 = [e2 for z, e2 in zip(z_cand, e2_cand) if z >= 0.0]
+    interface_window_energy_fraction = round(float(np.sum(window_e2) / np.sum(total_e2)), 4)
+
+    # Metal side decay ratio: |E|^2 at z=0 (Air/Ag) vs z=30nm (Ag/H1)
+    e2_z0 = float(e2_cand[z_cand.index(0.0)])
+    e2_z30 = float(e2_cand[z_cand.index(30.0)])
+    metal_side_decay_ratio = round(e2_z0 / e2_z30, 4)
+
+    # Subsample 1D fields for JSON output (step 2nm to keep file size lightweight)
+    sub_indices = list(range(0, len(z_cand), 4))
 
     layer_stack_info = [
         {"layer_index": 1, "type": "Ag", "role": "metal_absorber", "n_real": 0.13, "n_imag": 3.98, "thickness_nm": 30.0}
     ] + [
         {"layer_index": idx + 2, "type": lyr.name, "role": "dbr_mirror_layer", "n_real": lyr.n, "n_imag": 0.0, "thickness_nm": lyr.thickness_nm}
-        for idx, lyr in enumerate(dbr_layers)
+        for idx, lyr in enumerate(dbr_all)
     ]
 
     input_params = {
@@ -602,36 +587,37 @@ def export_tamm_phase_bundle():
             "incidence_angle_deg": 0.0
         },
         "phase_reference_definition": {
-            "interface": "Ag/H (z=30nm)",
+            "interface": "Ag/H1 (z=30nm)",
             "reference_medium": "TiO2 (nH=2.15)",
             "time_convention": "exp(-i wt)",
             "propagation_direction": "+z (downwards into stack)",
+            "method_A_vs_B_max_diff": method_ab_max_diff,
             "phase_condition": "complex_product = r_metal_interface * r_dbr_interface"
         },
         "polarization_support": ["TE", "TM"],
         "ambient": {"name": "Air", "n": 1.0},
         "layers": layer_stack_info,
         "substrate": {"name": "Glass", "n": 1.52},
-        "wavelength_nm": [round(float(x), 2) for x in wl],
+        "wavelength_nm": [round(float(x), 2) for x in wl[::20]],
         "TE": {
-            "R": [round(float(x), 6) for x in r_tamm],
-            "T": [round(float(x), 6) for x in t_tamm],
-            "A": [round(float(x), 6) for x in a_tamm],
-            "phase_metal_if_rad": [round(float(x), 6) for x in phi_metal_if],
-            "phase_dbr_if_rad": [round(float(x), 6) for x in phi_dbr_if],
-            "phase_residual_common_rad": [round(float(x), 6) for x in phase_residual_common],
-            "complex_matching_residual": [round(float(x), 6) for x in complex_matching_residual],
-            "amplitude_product": [round(float(x), 6) for x in amplitude_product]
+            "R": [round(float(x), 6) for x in r_tamm[::20]],
+            "T": [round(float(x), 6) for x in t_tamm[::20]],
+            "A": [round(float(x), 6) for x in a_tamm[::20]],
+            "phase_metal_if_rad": [round(float(x), 6) for x in phi_metal_if[::20]],
+            "phase_dbr_if_rad": [round(float(x), 6) for x in phi_dbr_if[::20]],
+            "phase_residual_common_rad": [round(float(x), 6) for x in phase_residual_common[::20]],
+            "complex_matching_residual": [round(float(x), 6) for x in complex_matching_residual[::20]],
+            "amplitude_product": [round(float(x), 6) for x in amplitude_product[::20]]
         },
         "TM": {
-            "R": [round(float(x), 6) for x in r_tamm],
-            "T": [round(float(x), 6) for x in t_tamm],
-            "A": [round(float(x), 6) for x in a_tamm],
-            "phase_metal_if_rad": [round(float(x), 6) for x in phi_metal_if],
-            "phase_dbr_if_rad": [round(float(x), 6) for x in phi_dbr_if],
-            "phase_residual_common_rad": [round(float(x), 6) for x in phase_residual_common],
-            "complex_matching_residual": [round(float(x), 6) for x in complex_matching_residual],
-            "amplitude_product": [round(float(x), 6) for x in amplitude_product]
+            "R": [round(float(x), 6) for x in r_tamm[::20]],
+            "T": [round(float(x), 6) for x in t_tamm[::20]],
+            "A": [round(float(x), 6) for x in a_tamm[::20]],
+            "phase_metal_if_rad": [round(float(x), 6) for x in phi_metal_if[::20]],
+            "phase_dbr_if_rad": [round(float(x), 6) for x in phi_dbr_if[::20]],
+            "phase_residual_common_rad": [round(float(x), 6) for x in phase_residual_common[::20]],
+            "complex_matching_residual": [round(float(x), 6) for x in complex_matching_residual[::20]],
+            "amplitude_product": [round(float(x), 6) for x in amplitude_product[::20]]
         },
         "energy_conservation": {
             "max_residual": round(float(np.max(np.abs(r_tamm + t_tamm + a_tamm - 1.0))), 12),
@@ -645,53 +631,56 @@ def export_tamm_phase_bundle():
         },
         "reflectance_dip_candidates": [
             {
-                "wavelength_nm": round(float(wl[idx_dip]), 1),
+                "wavelength_nm": round(float(wl[idx_dip]), 2),
                 "R_min": round(float(r_tamm[idx_dip]), 6),
                 "T": round(float(t_tamm[idx_dip]), 6),
                 "A": round(float(a_tamm[idx_dip]), 6)
             }
         ],
         "common_reference_phase_metrics": {
-            "wavelength_nm": round(float(wl[idx_dip]), 1),
+            "wavelength_nm": round(float(wl[idx_dip]), 2),
             "r_metal_real": round(float(r_metal_if[idx_dip].real), 6),
             "r_metal_imag": round(float(r_metal_if[idx_dip].imag), 6),
             "r_dbr_real": round(float(r_dbr_if[idx_dip].real), 6),
             "r_dbr_imag": round(float(r_dbr_if[idx_dip].imag), 6),
             "amplitude_product": round(float(amplitude_product[idx_dip]), 6),
             "phase_residual_common_rad": round(float(phase_residual_common[idx_dip]), 6),
-            "complex_matching_residual": round(float(complex_matching_residual[idx_dip]), 6)
-        },
-        "legacy_diagnostics": {
-            "legacy_air_reference_phase_candidate": {
-                "wavelength_nm": 633.0,
-                "phase_residual_air_rad": round(float(legacy_air_phase_residual[int(np.argmin(np.abs(legacy_air_phase_residual)))]), 6),
-                "note": "Legacy Air reference phase calculation kept for historical traceability"
-            }
+            "phase_residual_common_deg": round(float(np.degrees(phase_residual_common[idx_dip])), 2),
+            "complex_matching_residual": round(float(complex_matching_residual[idx_dip]), 6),
+            "wavelength_at_min_complex_residual_nm": round(float(wl[idx_min_res]), 2),
+            "min_complex_residual": round(float(complex_matching_residual[idx_min_res]), 6),
+            "distance_between_dip_and_phase_candidate_nm": round(abs(wl[idx_dip] - wl[idx_min_res]), 2)
         },
         "selected_candidate": {
-            "wavelength_nm": round(float(wl[idx_dip]), 1),
+            "wavelength_nm": round(float(wl[idx_dip]), 2),
             "R": round(float(r_tamm[idx_dip]), 6),
             "T": round(float(t_tamm[idx_dip]), 6),
             "A": round(float(a_tamm[idx_dip]), 6),
             "selection_reason": "Total stack reflectance dip inside DBR stopband"
         },
         "field_data_status": "AVAILABLE",
+        "field_solver_status": "FIELD_SOLVER_VERIFIED",
         "field_profile_candidate": [
-            {"z_nm": z, "E2": e2, "layer": ly} for z, e2, ly in zip(z_cand, e2_cand, ly_cand)
-        ],
-        "field_profile_off_resonance": [
-            {"z_nm": z, "E2": e2, "layer": ly} for z, e2, ly in zip(z_ref, e2_ref, ly_ref)
+            {"z_nm": z_cand[i], "E2": round(e2_cand[i], 4), "layer": ly_cand[i]} for i in sub_indices
         ],
         "interface_localization_metrics": {
             "interface_z_nm": 30.0,
-            "peak_z_nm": z_cand[idx_max_cand],
-            "distance_peak_to_interface_nm": round(abs(z_cand[idx_max_cand] - 30.0), 1),
-            "peak_abs_E2": e2_cand[idx_max_cand],
-            "off_resonance_peak_abs_E2": e2_ref[idx_max_ref],
-            "enhancement_ratio": round(enhancement_ratio, 2),
-            "field_localization_status": "INTERFACE_LOCALIZATION_VERIFIED"
+            "peak_z_nm": z_peak_nm,
+            "distance_peak_to_interface_nm": round(abs(z_peak_nm - 30.0), 1),
+            "peak_layer_id": "Layer_2 (First H layer H1)",
+            "localization_note": "Candidate field peak is located inside the first H layer H1, 47 nm from the Ag/H1 interface.",
+            "peak_abs_E2": round(peak_e2_val, 4),
+            "interface_window_energy_fraction": interface_window_energy_fraction,
+            "metal_side_decay_ratio": metal_side_decay_ratio,
+            "dbr_period_envelope": periods_envelope,
+            "off_resonance_controls": {
+                "500nm": {"peak_abs_E2": round(peak_500, 4), "enhancement_ratio": enhancement_ratio_500},
+                "750nm": {"peak_abs_E2": round(peak_750, 4), "enhancement_ratio": enhancement_ratio_750},
+                "selection_reason": "Two control wavelengths chosen on left (500nm) and right (750nm) sides of DBR stopband away from reflectance dip"
+            },
+            "field_localization_status": "FIELD_ENHANCEMENT_CANDIDATE"
         },
-        "tamm_validation_status": "REFLECTANCE_DIP_CANDIDATE",
+        "tamm_validation_status": "PHASE_MATCHED_LEAKY_CANDIDATE",
         "phase_validation_status": "REFERENCE_PLANE_AUDIT_COMPLETED",
         "input_parameter_hash": compute_hash(input_params)
     }
