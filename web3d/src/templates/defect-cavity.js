@@ -8,6 +8,7 @@ export class DefectCavityTemplate {
     this.group.name = "DefectCavityTemplateGroup";
     this.waveRenderer = new SineWaveRenderer();
     this.group.add(this.waveRenderer.getGroup());
+    this.animationSemantics = "STANDING_WAVE_SUPERPOSITION";
   }
 
   build(caseResult, options = {}) {
@@ -83,14 +84,13 @@ export class DefectCavityTemplate {
     subMesh.position.y = currentY - 0.5;
     this.group.add(subMesh);
 
-    // Rays & Waves
+    // Rays & Wave Descriptors
     const angleRad = (45 * Math.PI) / 180;
     const incStart = [-4 * Math.sin(angleRad), 4 * Math.cos(angleRad), 0];
     const origin = [0, 0, 0];
     const refEnd = [4 * Math.sin(angleRad), 4 * Math.cos(angleRad), 0];
     const transEnd = [2 * Math.sin(angleRad * 0.7), -5 * Math.cos(angleRad * 0.7), 0];
 
-    // Cavity inner bounds
     const cavityTop = [0, cavityYCenter + 0.25, 0];
     const cavityBottom = [0, cavityYCenter - 0.25, 0];
 
@@ -102,7 +102,6 @@ export class DefectCavityTemplate {
         amplitude: 0.25,
         wavelength: 0.8,
         speed: 2.0,
-        travelDir: 1,
         pol: polarization,
         color: 0xef4444,
       },
@@ -113,7 +112,6 @@ export class DefectCavityTemplate {
         amplitude: 0.05,
         wavelength: 0.8,
         speed: 2.0,
-        travelDir: 1,
         pol: polarization,
         color: 0x3b82f6,
       },
@@ -124,33 +122,20 @@ export class DefectCavityTemplate {
         amplitude: 0.24,
         wavelength: 0.6,
         speed: 2.0,
-        travelDir: 1,
         pol: polarization,
         color: 0x10b981,
       },
-      // Cavity intra-wave: forward wave (+Y to -Y)
+      // True F-P Standing Wave Superposition in Defect Cavity Layer
       {
-        id: "cavity_forward_wave",
+        id: "cavity_standing_wave_superposition",
         start: cavityTop,
         end: cavityBottom,
-        amplitude: 0.35,
-        wavelength: 0.4,
+        amplitude: 0.22,
+        wavelength: 0.25,
         speed: 2.0,
-        travelDir: 1,
         pol: polarization,
         color: 0x14b8a6,
-      },
-      // Cavity intra-wave: backward wave (-Y to +Y) -> Creates standing wave superposition
-      {
-        id: "cavity_backward_wave",
-        start: cavityBottom,
-        end: cavityTop,
-        amplitude: 0.35,
-        wavelength: 0.4,
-        speed: 2.0,
-        travelDir: -1,
-        pol: polarization,
-        color: 0x2dd4bf,
+        isSuperposition: true,
       },
     ];
 

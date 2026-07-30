@@ -34,7 +34,7 @@ test.describe("Stage C.1.4 Dynamic Sine-Wave Propagation Acceptance", () => {
   });
 
   for (const caseId of CASES) {
-    test(`${caseId}: dynamic sine-wave propagation, pause, polarization toggle, clean teardown`, async ({ page }) => {
+    test(`${caseId}: dynamic sine-wave propagation, pause, polarization toggle, clean teardown & window.__WEB3D_DEBUG__ verification`, async ({ page }) => {
       const caseConsoleEvents = [];
 
       page.on("console", (msg) => {
@@ -57,34 +57,48 @@ test.describe("Stage C.1.4 Dynamic Sine-Wave Propagation Acceptance", () => {
       const consoleErrors = caseConsoleEvents.filter((e) => e.type === "error");
       expect(consoleErrors, `${caseId}: unexpected console errors: ${JSON.stringify(consoleErrors)}`).toHaveLength(0);
 
-      // 1. Verify canvas rendering & screenshot at t1
+      // 1. Programmatic Debug API check via window.__WEB3D_DEBUG__
+      const debugPositions1 = await page.evaluate(() => {
+        return window.__WEB3D_DEBUG__ ? window.__WEB3D_DEBUG__.getWavePositions() : null;
+      });
+      expect(debugPositions1, `${caseId}: window.__WEB3D_DEBUG__.getWavePositions() should return non-null array`).not.toBeNull();
+      expect(debugPositions1.length, `${caseId}: active waves count > 0`).toBeGreaterThan(0);
+
+      // 2. Verify canvas rendering & screenshot at t1
       const canvas = page.locator("canvas").first();
       const screenshot1 = await canvas.screenshot();
 
-      // 2. Wait for wave propagation and take screenshot at t2
+      // 3. Wait for wave propagation and take screenshot at t2
       await page.waitForTimeout(800);
       const screenshot2 = await canvas.screenshot();
 
-      // Ensure pixel/buffer difference between t1 and t2 (wave is propagating)
-      expect(screenshot1.equals(screenshot2), `${caseId}: wave MUST animate over time`).toBe(false);
+      const debugPositions2 = await page.evaluate(() => {
+        return window.__WEB3D_DEBUG__.getWavePositions();
+      });
 
-      // 3. Test Pause functionality
+      // Ensure position values evolved over time
+      const positionChanged = debugPositions1[0].some((val, idx) => val !== debugPositions2[0][idx]);
+      expect(positionChanged, `${caseId}: wave positions MUST change programmatically over time`).toBe(true);
+      expect(screenshot1.equals(screenshot2), `${caseId}: canvas MUST animate over time`).toBe(false);
+
+      // 4. Test Pause functionality
       const pauseBtn = page.locator("#btn-play-pause");
       await pauseBtn.click();
       await page.waitForTimeout(200);
 
-      const pauseShot1 = await canvas.screenshot();
+      const pausePos1 = await page.evaluate(() => window.__WEB3D_DEBUG__.getWavePositions());
       await page.waitForTimeout(600);
-      const pauseShot2 = await canvas.screenshot();
+      const pausePos2 = await page.evaluate(() => window.__WEB3D_DEBUG__.getWavePositions());
 
-      // Paused canvas MUST remain identical
-      expect(pauseShot1.equals(pauseShot2), `${caseId}: paused canvas MUST NOT change`).toBe(true);
+      // Paused wave positions MUST remain identical
+      const pauseChanged = pausePos1[0].some((val, idx) => val !== pausePos2[0][idx]);
+      expect(pauseChanged, `${caseId}: paused wave positions MUST NOT change over time`).toBe(false);
 
       // Resume animation
       await pauseBtn.click();
       await page.waitForTimeout(300);
 
-      // 4. Test TE/TM Polarization Toggle
+      // 5. Test TE/TM Polarization Toggle
       const polBtn = page.locator("#btn-toggle-pol");
       const prePolShot = await canvas.screenshot();
 

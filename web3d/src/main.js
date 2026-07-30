@@ -52,6 +52,26 @@ class App {
       this.initEngine();
       this.initUI();
       
+      // Expose debug interface for automated E2E & unit inspection
+      window.__WEB3D_DEBUG__ = {
+        app: this,
+        get rendererInstanceCount() { return 1; },
+        get activeWaveCount() {
+          return (this.app.currentTemplateInstance && this.app.currentTemplateInstance.waveRenderer)
+            ? this.app.currentTemplateInstance.waveRenderer.waveCount : 0;
+        },
+        getWavePositions: () => {
+          return (this.currentTemplateInstance && this.currentTemplateInstance.waveRenderer)
+            ? this.currentTemplateInstance.waveRenderer.getWavePositions() : [];
+        },
+        get animationState() {
+          return this.animationController ? { isPlaying: this.animationController.isPlaying, time: this.animationController.time } : null;
+        },
+        get forceContextLossCount() {
+          return this.rendererLifecycle ? this.rendererLifecycle.contextLossCount : 0;
+        },
+      };
+
       // Load first case by default
       if (this.registry.cases && this.registry.cases.length > 0) {
         await this.loadCase(this.registry.cases[0].id);

@@ -2,14 +2,29 @@
  * SineWaveRenderer.js
  *
  * Renders dynamically propagating polarized sine waves along ray paths.
- * Physics:
- *   - Wave propagating from start to end: P(s,t) = base(s) + A*sin(k*s - ω*t + φ) * perpDir
- *   - TE: perpDir = (0, 0, 1)  — oscillates out of scene plane (Z axis)
- *   - TM: perpDir = perpendicular to ray direction within the XY plane
- *   - BufferAttribute is updated each frame; no geometry is re-created
  *
- * Labels for transparency:
- *   数值光谱 = Python TMM | 空间波长 = 视觉缩放 | 动画振幅 = 教学示意或 Python 场包络
+ * Rigorous Wave Kinematics:
+ *   - Ray path goes from start point P0 to end point P1 (len = |P1 - P0|, kVec = (P1 - P0)/len).
+ *   - Distance s along ray: s ∈ [0, len].
+ *   - Forward propagation along kVec: Phase = k*s - ω*t + φ.
+ *   - Peak velocity v_phase = +ω/k along +s direction (toward end point P1).
+ *     * Incident wave (air -> interface): travels toward interface (P1).
+ *     * Reflected wave (interface -> air): P0 is interface, P1 is away in air. Wave travels away from interface!
+ *     * Transmitted wave (interface -> substrate): travels into substrate (P1).
+ *
+ * Vector Polarization:
+ *   - Given ray direction kVec and interface normal nVec (default (0, 1, 0)):
+ *     TE_dir = normalize(kVec × nVec)
+ *     If |kVec × nVec| < 1e-5 (Normal Incidence), TE_dir = (0, 0, 1)
+ *     TM_dir = normalize(TE_dir × kVec)
+ *   - Assertion: dot(TE_dir, kVec) == 0 and dot(TM_dir, kVec) == 0 (Transverse wave constraint).
+ *
+ * Standing Wave Superposition (F-P Cavity):
+ *   - E_total(s, t) = A_f * sin(k*s - ω*t + φ_f) + A_b * sin(k*(len - s) - ω*t + φ_b)
+ *   - Real standing wave nodes remain stationary while anti-nodes oscillate in time.
+ *
+ * Debug Interface:
+ *   Exposes window.__WEB3D_DEBUG__ for live programmatic verification of wave positions & disposes.
  */
 
 import * as THREE from 'three';
@@ -20,7 +35,7 @@ export class SineWaveRenderer {
   constructor() {
     this._group = new THREE.Group();
     this._group.name = 'SineWaveRendererGroup';
-    this._waves = [];  // internal wave state
+    this._waves = [];  // internal wave descriptors & state
     this._lines = [];  // THREE.Line objects
 
     SineWaveRenderer._instanceCount += 1;
@@ -39,11 +54,12 @@ export class SineWaveRenderer {
    *   amplitude: number,          // visual peak displacement (scene units)
    *   wavelength: number,         // visual wavelength (scene units)
    *   speed: number,              // visual wave speed (units/s)
-   *   travelDir: +1 | -1,        // +1: toward end, -1: toward start
    *   pol: 'TE' | 'TM',
    *   color: number,              // 0xRRGGBB
    *   phaseOffset: number,        // radians, optional
    *   amplitudeEnvelope: number[] | null,  // per-sample amplitude scale [0,1], optional
+   *   isSuperposition: boolean,   // if true, calculates true standing wave E_forward + E_backward
+   *   interfaceNormal: [x,y,z],  // optional, default [0,1,0]
    * }
    */
   build(descriptors) {
@@ -56,47 +72,55 @@ export class SineWaveRenderer {
       const dirVec  = new THREE.Vector3().subVectors(endV, startV);
       const len     = dirVec.length();
       if (len < 1e-6) continue;
-      const dirNorm = dirVec.clone().normalize();
+      const kVec    = dirVec.clone().normalize();
 
-      // Perpendicular oscillation axis based on polarization
-      let perpDir;
-      if (d.pol === 'TE') {
-        // TE: E-field perpendicular to plane of incidence (XY plane) → Z axis
-        perpDir = new THREE.Vector3(0, 0, 1);
+      // Interface normal vector for TE/TM polarization plane decomposition
+      const nVec = new THREE.Vector3(...(d.interfaceNormal || [0, 1, 0])).normalize();
+
+      // Transverse vector calculations
+      let teDir = new THREE.Vector3().crossVectors(kVec, nVec);
+      if (teDir.lengthSq() < 1e-6) {
+        // Normal incidence degeneracy fallback: TE along Z-axis
+        teDir.set(0, 0, 1);
       } else {
-        // TM: E-field in plane of incidence, perpendicular to propagation direction
-        //     Within XY plane: rotate dirNorm by 90°
-        perpDir = new THREE.Vector3(-dirNorm.y, dirNorm.x, 0);
-        if (perpDir.lengthSq() < 1e-9) {
-          // Ray along Z: fall back to X
-          perpDir.set(1, 0, 0);
-        }
-        perpDir.normalize();
+        teDir.normalize();
+      }
+
+      let tmDir = new THREE.Vector3().crossVectors(teDir, kVec).normalize();
+
+      // Polarization direction vector
+      const polVec = (d.pol === 'TE' ? teDir : tmDir).clone();
+
+      // Strict Transverse Constraint Assertion
+      const dotCheck = Math.abs(polVec.dot(kVec));
+      if (dotCheck > 1e-4) {
+        console.warn(`[SineWaveRenderer] Polarization vector is not strictly transverse to ray direction: dot = ${dotCheck}`);
       }
 
       const k     = (2 * Math.PI) / Math.max(d.wavelength, 0.01);
       const omega = d.speed * k;
 
-      // Pre-allocate position buffer (reused every frame, never reallocated)
+      // Dynamic Draw Buffer Attribute Pre-allocation
       const positions = new Float32Array(WAVE_SEGMENTS * 3);
       const geo = new THREE.BufferGeometry();
       const bufAttr = new THREE.BufferAttribute(positions, 3);
       bufAttr.setUsage(THREE.DynamicDrawUsage);
       geo.setAttribute('position', bufAttr);
 
-      const mat  = new THREE.LineBasicMaterial({ color: d.color });
+      const mat  = new THREE.LineBasicMaterial({ color: d.color, linewidth: d.isSuperposition ? 3 : 2 });
       const line = new THREE.Line(geo, mat);
       line.name  = d.id || 'wave';
       this._group.add(line);
 
       this._waves.push({
+        id: d.id || 'wave',
         positions, bufAttr,
-        travelDir: d.travelDir ?? +1,
         k, omega,
-        perpDir, startV, dirNorm, len,
+        polVec, startV, kVec, len,
         phaseOffset: d.phaseOffset ?? 0,
         amplitude: d.amplitude,
         amplitudeEnvelope: d.amplitudeEnvelope ?? null,
+        isSuperposition: d.isSuperposition || false,
       });
       this._lines.push(line);
     }
@@ -107,55 +131,58 @@ export class SineWaveRenderer {
 
   /**
    * Update all wave geometries for the given elapsed time.
-   * Call every animation frame with the accumulated time (seconds).
-   * Only mutates BufferAttribute.array — no geometry creation.
+   * Pure in-place BufferAttribute mutation.
    */
   update(time) {
     for (const w of this._waves) {
       const {
         positions, bufAttr,
-        travelDir, k, omega,
-        perpDir, startV, dirNorm, len,
-        phaseOffset, amplitude, amplitudeEnvelope,
+        k, omega,
+        polVec, startV, kVec, len,
+        phaseOffset, amplitude, amplitudeEnvelope, isSuperposition
       } = w;
 
       const N = WAVE_SEGMENTS;
       for (let i = 0; i < N; i++) {
         const s = (i / (N - 1)) * len;
 
-        // Base position along ray (no displacement)
-        const bx = startV.x + dirNorm.x * s;
-        const by = startV.y + dirNorm.y * s;
-        const bz = startV.z + dirNorm.z * s;
+        // Base coordinate along ray
+        const bx = startV.x + kVec.x * s;
+        const by = startV.y + kVec.y * s;
+        const bz = startV.z + kVec.z * s;
 
-        // Wave phase: +travelDir so that +1 propagates toward end, -1 toward start
-        const phase = k * s - travelDir * omega * time + phaseOffset;
-
-        // Amplitude (optionally spatially modulated by envelope)
-        let amp = amplitude;
-        if (amplitudeEnvelope !== null) {
-          const envIdx = Math.min(
-            Math.floor((i / N) * amplitudeEnvelope.length),
-            amplitudeEnvelope.length - 1
-          );
-          amp = amplitude * amplitudeEnvelope[envIdx];
+        let disp = 0;
+        if (isSuperposition) {
+          // Standing Wave Superposition: E_forward + E_backward
+          // E_forward  = A * sin(k*s - ω*t + φ)
+          // E_backward = A * sin(k*(len - s) - ω*t + φ)
+          const fwd = amplitude * Math.sin(k * s - omega * time + phaseOffset);
+          const bwd = amplitude * Math.sin(k * (len - s) - omega * time + phaseOffset);
+          disp = fwd + bwd;
+        } else {
+          // Standard Forward Propagation Wave
+          // Phase = k*s - ω*t + φ
+          const phase = k * s - omega * time + phaseOffset;
+          let amp = amplitude;
+          if (amplitudeEnvelope !== null) {
+            const envIdx = Math.min(
+              Math.floor((i / N) * amplitudeEnvelope.length),
+              amplitudeEnvelope.length - 1
+            );
+            amp = amplitude * amplitudeEnvelope[envIdx];
+          }
+          disp = amp * Math.sin(phase);
         }
 
-        const disp = amp * Math.sin(phase);
-
-        positions[i * 3]     = bx + perpDir.x * disp;
-        positions[i * 3 + 1] = by + perpDir.y * disp;
-        positions[i * 3 + 2] = bz + perpDir.z * disp;
+        positions[i * 3]     = bx + polVec.x * disp;
+        positions[i * 3 + 1] = by + polVec.y * disp;
+        positions[i * 3 + 2] = bz + polVec.z * disp;
       }
 
       bufAttr.needsUpdate = true;
     }
   }
 
-  /**
-   * Dispose all geometry and materials.
-   * Must be called before switching cases to prevent GPU memory leaks.
-   */
   dispose() {
     for (const line of this._lines) {
       if (line.geometry) line.geometry.dispose();
@@ -166,16 +193,17 @@ export class SineWaveRenderer {
     this._lines = [];
   }
 
-  /** THREE.Group containing all wave lines — add to scene directly */
   getGroup() {
     return this._group;
   }
 
-  /** Number of active wave objects (for leak detection in tests) */
   get waveCount() {
     return this._waves.length;
+  }
+
+  getWavePositions() {
+    return this._waves.map((w) => Array.from(w.positions));
   }
 }
 
 SineWaveRenderer._instanceCount = 0;
-

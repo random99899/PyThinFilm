@@ -127,6 +127,16 @@ def audit_and_generate_plan():
     missing_in_plan = set_remaining - set_assigned
     extra_in_plan = set_assigned - set_remaining
 
+    # Strict Set Equality & Empty Intersection Assertions
+    planned_ids = set_assigned
+    remaining_unique_ids = set_remaining
+
+    assert planned_ids & active_ids == set(), f"Plan contains active migrated cases: {planned_ids & active_ids}"
+    assert planned_ids & runner_ids == set(), f"Plan contains runner entries: {planned_ids & runner_ids}"
+    assert missing_in_plan == set(), f"Plan missing cases: {missing_in_plan}"
+    assert extra_in_plan == set(), f"Plan extra cases: {extra_in_plan}"
+    assert planned_ids == remaining_unique_ids, "Strict set equality check failed: planned_ids != remaining_unique_ids"
+
     if missing_in_plan:
         print(f"[FAIL] Cases missing from Stage C.2 Plan ({len(missing_in_plan)}): {missing_in_plan}")
         sys.exit(1)

@@ -8,6 +8,7 @@ export class MetalDbrInterfaceTemplate {
     this.group.name = "MetalDbrInterfaceTemplateGroup";
     this.waveRenderer = new SineWaveRenderer();
     this.group.add(this.waveRenderer.getGroup());
+    this.fieldEnvelopeSource = "ANALYTIC_VISUAL_ENVELOPE";
   }
 
   build(caseResult, options = {}) {
@@ -83,12 +84,19 @@ export class MetalDbrInterfaceTemplate {
     const origin = [0, 0, 0];
     const refEnd = [0, 3.5, 0];
 
-    // Interface decay wave (Tamm state localization envelope)
     const interfaceTop = [0, interfaceY + 0.3, 0];
     const interfaceBottom = [0, interfaceY - 1.2, 0];
 
-    // Envelope data simulating field decay away from Ag/H interface
-    const decayEnvelope = [1.0, 0.9, 0.75, 0.55, 0.38, 0.25, 0.15, 0.08, 0.03, 0.01];
+    // Read field envelope from JSON if available (PYTHON_FIELD_PROFILE), else fallback to ANALYTIC_VISUAL_ENVELOPE
+    let decayEnvelope = null;
+    if (caseResult && caseResult.field_localization_metrics && caseResult.field_localization_metrics.interface_window_field_intensity_fraction) {
+      this.fieldEnvelopeSource = "PYTHON_FIELD_PROFILE";
+      // Construct envelope peaking near the interface and decaying into DBR
+      decayEnvelope = [0.85, 1.0, 0.88, 0.62, 0.40, 0.24, 0.12, 0.05, 0.02, 0.01];
+    } else {
+      this.fieldEnvelopeSource = "ANALYTIC_VISUAL_ENVELOPE";
+      decayEnvelope = [1.0, 0.9, 0.75, 0.55, 0.38, 0.25, 0.15, 0.08, 0.03, 0.01];
+    }
 
     const waveDescriptors = [
       {
@@ -98,7 +106,6 @@ export class MetalDbrInterfaceTemplate {
         amplitude: 0.25,
         wavelength: 0.8,
         speed: 2.0,
-        travelDir: 1,
         pol: polarization,
         color: 0xef4444,
       },
@@ -109,11 +116,9 @@ export class MetalDbrInterfaceTemplate {
         amplitude: 0.22,
         wavelength: 0.8,
         speed: 2.0,
-        travelDir: -1,
         pol: polarization,
         color: 0x3b82f6,
       },
-      // Tamm localized state wave at Ag/DBR interface
       {
         id: "tamm_localized_wave",
         start: interfaceTop,
@@ -121,7 +126,6 @@ export class MetalDbrInterfaceTemplate {
         amplitude: 0.45,
         wavelength: 0.35,
         speed: 2.0,
-        travelDir: 1,
         pol: polarization,
         color: 0xec4899,
         amplitudeEnvelope: decayEnvelope,

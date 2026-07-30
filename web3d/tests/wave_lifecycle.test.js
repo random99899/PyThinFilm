@@ -19,8 +19,8 @@ describe("Wave Lifecycle Teardown & Rebuild Tests", () => {
     const cavityTemp = new DefectCavityTemplate(null);
     cavityTemp.build(null, { polarization: "TM" });
 
-    // Should include incident, reflected, transmitted, forward cavity, and backward cavity waves (5 total)
-    expect(cavityTemp.waveRenderer.waveCount).toBe(5);
+    // Should include incident, reflected, transmitted, and standing wave superposition (4 descriptors total)
+    expect(cavityTemp.waveRenderer.waveCount).toBe(4);
 
     cavityTemp.dispose();
 
