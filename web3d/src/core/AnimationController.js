@@ -21,4 +21,9 @@ export class AnimationController {
     this.time = 0;
     this.isPlaying = true;
   }
+
+  setSpeed(speed) {
+    this.speed = Math.max(0.1, Math.min(5.0, Number(speed) || 1.0));
+  }
 }
+

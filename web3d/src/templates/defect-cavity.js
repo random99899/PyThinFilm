@@ -1,19 +1,22 @@
 import * as THREE from "three";
+import { SineWaveRenderer } from "../core/SineWaveRenderer.js";
 
 export class DefectCavityTemplate {
   constructor(container) {
     this.container = container;
     this.group = new THREE.Group();
     this.group.name = "DefectCavityTemplateGroup";
+    this.waveRenderer = new SineWaveRenderer();
+    this.group.add(this.waveRenderer.getGroup());
   }
 
   build(caseResult, options = {}) {
     this.dispose();
+    this.group.add(this.waveRenderer.getGroup());
 
     const isExploded = options.isExploded || false;
     const polarization = options.polarization || "TE";
 
-    // Extract exact layer stack from Python result JSON (13 layers)
     const layersData = (caseResult && caseResult.layers) ? caseResult.layers : [
       { layer_index: 1, type: "H", role: "mirror_layer", n: 2.15, thickness_nm: 63.95 },
       { layer_index: 2, type: "L", role: "mirror_layer", n: 1.38, thickness_nm: 99.64 },
@@ -33,6 +36,7 @@ export class DefectCavityTemplate {
     let currentY = 0;
     const width = 6;
     const depth = 4;
+    let cavityYCenter = 0;
 
     // Ambient Air
     const airGeo = new THREE.BoxGeometry(width, 0.4, depth);
@@ -42,14 +46,11 @@ export class DefectCavityTemplate {
     this.group.add(airMesh);
     currentY -= 0.4 + (isExploded ? 0.25 : 0.02);
 
-    // 13 Layers
     layersData.forEach((layer) => {
       const isCavity = layer.type === "C";
       const isH = layer.type === "H";
-      
       const thicknessVisual = isCavity ? 0.5 : Math.max(0.18, (layer.thickness_nm || 80) / 220);
-      
-      // Color: Cavity (C) -> High-contrast Cyan Glow, H -> Amber, L -> Blue
+
       let color = 0x60a5fa;
       if (isCavity) color = 0x14b8a6;
       else if (isH) color = 0xf59e0b;
@@ -66,15 +67,11 @@ export class DefectCavityTemplate {
       const mesh = new THREE.Mesh(geo, mat);
 
       const gap = isExploded ? 0.25 : 0.015;
-      mesh.position.y = currentY - thicknessVisual / 2;
-      mesh.userData = {
-        layerIndex: layer.layer_index,
-        type: layer.type,
-        role: layer.role,
-        n: layer.n,
-        thickness_nm: layer.thickness_nm,
-      };
-
+      const posY = currentY - thicknessVisual / 2;
+      mesh.position.y = posY;
+      if (isCavity) {
+        cavityYCenter = posY;
+      }
       this.group.add(mesh);
       currentY -= thicknessVisual + gap;
     });
@@ -86,31 +83,80 @@ export class DefectCavityTemplate {
     subMesh.position.y = currentY - 0.5;
     this.group.add(subMesh);
 
-    // 45 deg Rays (Incident, Reflected, Transmitted)
+    // Rays & Waves
     const angleRad = (45 * Math.PI) / 180;
-    
-    const incGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-4 * Math.sin(angleRad), 4 * Math.cos(angleRad), 0),
-      new THREE.Vector3(0, 0, 0),
-    ]);
-    const incLine = new THREE.Line(incGeo, new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 2 }));
-    this.group.add(incLine);
+    const incStart = [-4 * Math.sin(angleRad), 4 * Math.cos(angleRad), 0];
+    const origin = [0, 0, 0];
+    const refEnd = [4 * Math.sin(angleRad), 4 * Math.cos(angleRad), 0];
+    const transEnd = [2 * Math.sin(angleRad * 0.7), -5 * Math.cos(angleRad * 0.7), 0];
 
-    const refGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(4 * Math.sin(angleRad), 4 * Math.cos(angleRad), 0),
-    ]);
-    const refLine = new THREE.Line(refGeo, new THREE.LineBasicMaterial({ color: 0x3b82f6, linewidth: 2 }));
-    this.group.add(refLine);
+    // Cavity inner bounds
+    const cavityTop = [0, cavityYCenter + 0.25, 0];
+    const cavityBottom = [0, cavityYCenter - 0.25, 0];
 
-    const transGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(2 * Math.sin(angleRad * 0.7), -5 * Math.cos(angleRad * 0.7), 0),
-    ]);
-    const transLine = new THREE.Line(transGeo, new THREE.LineBasicMaterial({ color: 0x10b981, linewidth: 2 }));
-    this.group.add(transLine);
+    const waveDescriptors = [
+      {
+        id: "incident_wave",
+        start: incStart,
+        end: origin,
+        amplitude: 0.25,
+        wavelength: 0.8,
+        speed: 2.0,
+        travelDir: 1,
+        pol: polarization,
+        color: 0xef4444,
+      },
+      {
+        id: "reflected_wave",
+        start: origin,
+        end: refEnd,
+        amplitude: 0.05,
+        wavelength: 0.8,
+        speed: 2.0,
+        travelDir: 1,
+        pol: polarization,
+        color: 0x3b82f6,
+      },
+      {
+        id: "transmitted_wave",
+        start: origin,
+        end: transEnd,
+        amplitude: 0.24,
+        wavelength: 0.6,
+        speed: 2.0,
+        travelDir: 1,
+        pol: polarization,
+        color: 0x10b981,
+      },
+      // Cavity intra-wave: forward wave (+Y to -Y)
+      {
+        id: "cavity_forward_wave",
+        start: cavityTop,
+        end: cavityBottom,
+        amplitude: 0.35,
+        wavelength: 0.4,
+        speed: 2.0,
+        travelDir: 1,
+        pol: polarization,
+        color: 0x14b8a6,
+      },
+      // Cavity intra-wave: backward wave (-Y to +Y) -> Creates standing wave superposition
+      {
+        id: "cavity_backward_wave",
+        start: cavityBottom,
+        end: cavityTop,
+        amplitude: 0.35,
+        wavelength: 0.4,
+        speed: 2.0,
+        travelDir: -1,
+        pol: polarization,
+        color: 0x2dd4bf,
+      },
+    ];
 
-    // Polarization Arrow
+    this.waveRenderer.build(waveDescriptors);
+
+    // Polarization Helper Arrow
     const polDir = polarization === "TE" ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
     const polHex = polarization === "TE" ? 0xf59e0b : 0xec4899;
     const arrow = new THREE.ArrowHelper(polDir, new THREE.Vector3(0, 2.2, 0), 1.5, polHex, 0.4, 0.2);
@@ -119,7 +165,16 @@ export class DefectCavityTemplate {
     return this.group;
   }
 
+  updateAnimation(timeSeconds) {
+    if (this.waveRenderer) {
+      this.waveRenderer.update(timeSeconds);
+    }
+  }
+
   dispose() {
+    if (this.waveRenderer) {
+      this.waveRenderer.dispose();
+    }
     while (this.group.children.length > 0) {
       const child = this.group.children[0];
       if (child.geometry) child.geometry.dispose();

@@ -2,6 +2,7 @@ import { SceneManager } from "./core/SceneManager.js";
 import { CameraManager } from "./core/CameraManager.js";
 import { RendererLifecycle } from "./core/RendererLifecycle.js";
 import { ResourceDisposer } from "./core/ResourceDisposer.js";
+import { AnimationController } from "./core/AnimationController.js";
 
 import { SingleInterfaceTemplate } from "./templates/single-interface.js";
 import { PeriodicStackTemplate } from "./templates/periodic-stack.js";
@@ -67,15 +68,28 @@ class App {
 
     this.cameraManager.initControls(this.rendererLifecycle.getDomElement());
 
+    this.animationController = new AnimationController();
+    this.lastTimestamp = 0;
+
     window.addEventListener("resize", () => {
       this.cameraManager.onResize();
       this.rendererLifecycle.onResize();
     });
 
-    // Start Animation Render Loop
-    this.rendererLifecycle.startLoop(() => {
+    // Start Animation Render Loop using deltaTime
+    this.rendererLifecycle.startLoop((timestamp) => {
       const controls = this.cameraManager.getControls();
       if (controls) controls.update();
+
+      if (!this.lastTimestamp) this.lastTimestamp = timestamp;
+      const deltaSeconds = Math.min((timestamp - this.lastTimestamp) / 1000, 0.1);
+      this.lastTimestamp = timestamp;
+
+      const animTime = this.animationController.update(deltaSeconds);
+
+      if (this.currentTemplateInstance && typeof this.currentTemplateInstance.updateAnimation === "function") {
+        this.currentTemplateInstance.updateAnimation(animTime);
+      }
 
       this.rendererLifecycle.getRenderer().render(
         this.sceneManager.getScene(),
@@ -94,7 +108,11 @@ class App {
 
     // Button Events
     document.querySelector("#btn-play-pause")?.addEventListener("click", () => {
-      console.log("Animation playing toggled");
+      if (this.animationController) {
+        const isPlaying = this.animationController.togglePlayPause();
+        const btn = document.querySelector("#btn-play-pause");
+        if (btn) btn.textContent = isPlaying ? "暂停" : "播放";
+      }
     });
 
     document.querySelector("#btn-reset-view")?.addEventListener("click", () => {

@@ -10,26 +10,6 @@
     "text": "[vite] connected."
   },
   {
-    "caseId": "single_ar",
-    "type": "warning",
-    "text": "[.WebGL-0x2d14001b7a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
-  },
-  {
-    "caseId": "single_ar",
-    "type": "warning",
-    "text": "[.WebGL-0x2d14001b7a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
-  },
-  {
-    "caseId": "single_ar",
-    "type": "warning",
-    "text": "[.WebGL-0x2d14001b7a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
-  },
-  {
-    "caseId": "single_ar",
-    "type": "warning",
-    "text": "[.WebGL-0x2d14001b7a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
-  },
-  {
     "caseId": "bragg_reflector",
     "type": "debug",
     "text": "[vite] connecting..."

@@ -1,19 +1,22 @@
 import * as THREE from "three";
+import { SineWaveRenderer } from "../core/SineWaveRenderer.js";
 
 export class MetalDbrInterfaceTemplate {
   constructor(container) {
     this.container = container;
     this.group = new THREE.Group();
     this.group.name = "MetalDbrInterfaceTemplateGroup";
+    this.waveRenderer = new SineWaveRenderer();
+    this.group.add(this.waveRenderer.getGroup());
   }
 
   build(caseResult, options = {}) {
     this.dispose();
+    this.group.add(this.waveRenderer.getGroup());
 
     const isExploded = options.isExploded || false;
     const polarization = options.polarization || "TE";
 
-    // Extract layers from JSON
     const layersData = (caseResult && caseResult.layers) ? caseResult.layers : [
       { layer_index: 1, type: "Ag", role: "metal_absorber", n_real: 0.13, n_imag: 3.98, thickness_nm: 30.0 },
       { layer_index: 2, type: "H", role: "dbr_mirror_layer", n_real: 2.15, n_imag: 0.0, thickness_nm: 63.95 },
@@ -28,6 +31,7 @@ export class MetalDbrInterfaceTemplate {
     let currentY = 0;
     const width = 6;
     const depth = 4;
+    let interfaceY = 0;
 
     // Ambient Air
     const airGeo = new THREE.BoxGeometry(width, 0.4, depth);
@@ -37,15 +41,12 @@ export class MetalDbrInterfaceTemplate {
     this.group.add(airMesh);
     currentY -= 0.4 + (isExploded ? 0.25 : 0.02);
 
-    // 8 Layers
     layersData.forEach((layer) => {
       const isMetal = layer.type === "Ag";
       const isH = layer.type === "H";
-      
       const thicknessVisual = isMetal ? 0.3 : Math.max(0.18, (layer.thickness_nm || 80) / 220);
-      
-      // Metallic Silver vs Amber vs Blue
-      let color = 0x94a3b8; // Ag Silver
+
+      let color = 0x94a3b8;
       if (!isMetal) color = isH ? 0xf59e0b : 0x60a5fa;
 
       const geo = new THREE.BoxGeometry(width, thicknessVisual, depth);
@@ -61,16 +62,11 @@ export class MetalDbrInterfaceTemplate {
       const mesh = new THREE.Mesh(geo, mat);
 
       const gap = isExploded ? 0.25 : 0.015;
-      mesh.position.y = currentY - thicknessVisual / 2;
-      mesh.userData = {
-        layerIndex: layer.layer_index,
-        type: layer.type,
-        role: layer.role,
-        n_real: layer.n_real,
-        n_imag: layer.n_imag || 0.0,
-        thickness_nm: layer.thickness_nm,
-      };
-
+      const posY = currentY - thicknessVisual / 2;
+      mesh.position.y = posY;
+      if (isMetal) {
+        interfaceY = posY - thicknessVisual / 2; // Ag/DBR interface
+      }
       this.group.add(mesh);
       currentY -= thicknessVisual + gap;
     });
@@ -82,20 +78,57 @@ export class MetalDbrInterfaceTemplate {
     subMesh.position.y = currentY - 0.5;
     this.group.add(subMesh);
 
-    // Normal Incidence Rays (0 deg)
-    const incGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 3.5, 0),
-      new THREE.Vector3(0, 0, 0),
-    ]);
-    const incLine = new THREE.Line(incGeo, new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 2 }));
-    this.group.add(incLine);
+    // Rays & Waves (Normal Incidence)
+    const incStart = [0, 3.5, 0];
+    const origin = [0, 0, 0];
+    const refEnd = [0, 3.5, 0];
 
-    const refGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 3.5, 0),
-    ]);
-    const refLine = new THREE.Line(refGeo, new THREE.LineBasicMaterial({ color: 0x3b82f6, linewidth: 2 }));
-    this.group.add(refLine);
+    // Interface decay wave (Tamm state localization envelope)
+    const interfaceTop = [0, interfaceY + 0.3, 0];
+    const interfaceBottom = [0, interfaceY - 1.2, 0];
+
+    // Envelope data simulating field decay away from Ag/H interface
+    const decayEnvelope = [1.0, 0.9, 0.75, 0.55, 0.38, 0.25, 0.15, 0.08, 0.03, 0.01];
+
+    const waveDescriptors = [
+      {
+        id: "incident_wave",
+        start: incStart,
+        end: origin,
+        amplitude: 0.25,
+        wavelength: 0.8,
+        speed: 2.0,
+        travelDir: 1,
+        pol: polarization,
+        color: 0xef4444,
+      },
+      {
+        id: "reflected_wave",
+        start: origin,
+        end: refEnd,
+        amplitude: 0.22,
+        wavelength: 0.8,
+        speed: 2.0,
+        travelDir: -1,
+        pol: polarization,
+        color: 0x3b82f6,
+      },
+      // Tamm localized state wave at Ag/DBR interface
+      {
+        id: "tamm_localized_wave",
+        start: interfaceTop,
+        end: interfaceBottom,
+        amplitude: 0.45,
+        wavelength: 0.35,
+        speed: 2.0,
+        travelDir: 1,
+        pol: polarization,
+        color: 0xec4899,
+        amplitudeEnvelope: decayEnvelope,
+      },
+    ];
+
+    this.waveRenderer.build(waveDescriptors);
 
     // Polarization Arrow
     const polDir = polarization === "TE" ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
@@ -106,7 +139,16 @@ export class MetalDbrInterfaceTemplate {
     return this.group;
   }
 
+  updateAnimation(timeSeconds) {
+    if (this.waveRenderer) {
+      this.waveRenderer.update(timeSeconds);
+    }
+  }
+
   dispose() {
+    if (this.waveRenderer) {
+      this.waveRenderer.dispose();
+    }
     while (this.group.children.length > 0) {
       const child = this.group.children[0];
       if (child.geometry) child.geometry.dispose();

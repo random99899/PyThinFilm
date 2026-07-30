@@ -72,6 +72,231 @@
   },
   "suites": [
     {
+      "title": "stage_c1_dynamic_wave.spec.js",
+      "file": "stage_c1_dynamic_wave.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Stage C.1.4 Dynamic Sine-Wave Propagation Acceptance",
+          "file": "stage_c1_dynamic_wave.spec.js",
+          "line": 30,
+          "column": 6,
+          "specs": [
+            {
+              "title": "single_ar: dynamic sine-wave propagation, pause, polarization toggle, clean teardown",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4921,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:12:49.375Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e8264c93979fbec8acc7-a4d0660cc7ab50fccc6d",
+              "file": "stage_c1_dynamic_wave.spec.js",
+              "line": 37,
+              "column": 5
+            },
+            {
+              "title": "bragg_reflector: dynamic sine-wave propagation, pause, polarization toggle, clean teardown",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5164,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:12:55.063Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e8264c93979fbec8acc7-7879c60c024f7c6f49e4",
+              "file": "stage_c1_dynamic_wave.spec.js",
+              "line": 37,
+              "column": 5
+            },
+            {
+              "title": "fp_filter: dynamic sine-wave propagation, pause, polarization toggle, clean teardown",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5716,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:13:00.235Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e8264c93979fbec8acc7-0b71b021c5ed2c933e44",
+              "file": "stage_c1_dynamic_wave.spec.js",
+              "line": 37,
+              "column": 5
+            },
+            {
+              "title": "narrowband_filter: dynamic sine-wave propagation, pause, polarization toggle, clean teardown",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5428,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:13:05.965Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e8264c93979fbec8acc7-1277b43aa4c98475d467",
+              "file": "stage_c1_dynamic_wave.spec.js",
+              "line": 37,
+              "column": 5
+            },
+            {
+              "title": "tamm_phase_bundle: dynamic sine-wave propagation, pause, polarization toggle, clean teardown",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5093,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:13:11.414Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e8264c93979fbec8acc7-ba9778f3a70d7e9a676d",
+              "file": "stage_c1_dynamic_wave.spec.js",
+              "line": 37,
+              "column": 5
+            },
+            {
+              "title": "Sequential case switching without residual waves or context loss",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3120,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[playwright] Console log saved to C:\\Users\\L2791\\Downloads\\PyThinFilm\\docs\\visualization\\runtime\\stage_c1\\playwright_dynamic_wave_console.json\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:13:16.523Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e8264c93979fbec8acc7-c65e944a785c34b50bae",
+              "file": "stage_c1_dynamic_wave.spec.js",
+              "line": 99,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
       "title": "stage_c1_runtime.spec.js",
       "file": "stage_c1_runtime.spec.js",
       "column": 0,
@@ -100,7 +325,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2727,
+                      "duration": 2919,
                       "errors": [],
                       "stdout": [
                         {
@@ -109,7 +334,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:26.891Z",
+                      "startTime": "2026-07-30T01:13:19.786Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -138,7 +363,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2382,
+                      "duration": 2732,
                       "errors": [],
                       "stdout": [
                         {
@@ -147,7 +372,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:30.481Z",
+                      "startTime": "2026-07-30T01:13:22.717Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -176,7 +401,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3374,
+                      "duration": 4019,
                       "errors": [],
                       "stdout": [
                         {
@@ -188,7 +413,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:32.872Z",
+                      "startTime": "2026-07-30T01:13:25.463Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -217,7 +442,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2460,
+                      "duration": 2751,
                       "errors": [],
                       "stdout": [
                         {
@@ -226,7 +451,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:36.257Z",
+                      "startTime": "2026-07-30T01:13:29.500Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -255,7 +480,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2425,
+                      "duration": 2813,
                       "errors": [],
                       "stdout": [
                         {
@@ -264,7 +489,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:38.722Z",
+                      "startTime": "2026-07-30T01:13:32.271Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -293,7 +518,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2429,
+                      "duration": 2752,
                       "errors": [],
                       "stdout": [
                         {
@@ -302,7 +527,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:41.155Z",
+                      "startTime": "2026-07-30T01:13:35.101Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -331,7 +556,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2464,
+                      "duration": 2744,
                       "errors": [],
                       "stdout": [
                         {
@@ -340,7 +565,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:43.593Z",
+                      "startTime": "2026-07-30T01:13:37.868Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -369,7 +594,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2376,
+                      "duration": 2700,
                       "errors": [],
                       "stdout": [
                         {
@@ -378,7 +603,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:46.067Z",
+                      "startTime": "2026-07-30T01:13:40.625Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -407,7 +632,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2393,
+                      "duration": 2822,
                       "errors": [],
                       "stdout": [
                         {
@@ -416,7 +641,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:48.451Z",
+                      "startTime": "2026-07-30T01:13:43.340Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -445,7 +670,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3362,
+                      "duration": 3942,
                       "errors": [],
                       "stdout": [
                         {
@@ -457,7 +682,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:50.853Z",
+                      "startTime": "2026-07-30T01:13:46.175Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -486,7 +711,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6227,
+                      "duration": 8287,
                       "errors": [],
                       "stdout": [
                         {
@@ -495,7 +720,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-29T07:57:54.228Z",
+                      "startTime": "2026-07-30T01:13:50.134Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -515,9 +740,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-07-29T07:57:24.539Z",
-    "duration": 36262.37,
-    "expected": 11,
+    "startTime": "2026-07-30T01:12:46.980Z",
+    "duration": 71856.392,
+    "expected": 17,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0
