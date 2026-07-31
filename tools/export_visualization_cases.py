@@ -667,9 +667,13 @@ def export_tamm_phase_bundle():
         },
         "field_data_status": "AVAILABLE",
         "field_solver_status": "FIELD_SOLVER_VERIFIED",
-        "field_profile_candidate": [
-            {"z_nm": z_cand[i], "E2": round(e2_cand[i], 4), "layer": ly_cand[i]} for i in sub_indices
-        ],
+        "field_profile_candidate": {
+            "normalized_abs_E2": [round(float(e2_cand[i] / peak_e2_val), 4) for i in sub_indices],
+            "sample_points": [
+                {"z_nm": round(float(z_cand[i]), 2), "E2": round(float(e2_cand[i]), 4), "layer": ly_cand[i]} for i in sub_indices
+            ],
+            "peak_position_nm": z_peak_nm
+        },
         "interface_localization_metrics": {
             "interface_z_nm": 30.0,
             "peak_z_nm": z_peak_nm,

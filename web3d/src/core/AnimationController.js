@@ -3,6 +3,11 @@ export class AnimationController {
     this.isPlaying = true;
     this.time = 0;
     this.speed = 1.0;
+    this.caseUpdateSubscriptionRemovalCount = 0;
+  }
+
+  notifyCaseUnsubscribed() {
+    this.caseUpdateSubscriptionRemovalCount += 1;
   }
 
   togglePlayPause() {

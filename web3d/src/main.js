@@ -59,6 +59,7 @@ class App {
         get rendererDisposeCount() { return this.app.rendererLifecycle ? this.app.rendererLifecycle.rendererDisposeCount : 0; },
         get forceContextLossCount() { return this.app.rendererLifecycle ? this.app.rendererLifecycle.contextLossCount : 0; },
         get animationCancelCount() { return this.app.rendererLifecycle ? this.app.rendererLifecycle.animationCancelCount : 0; },
+        get caseUpdateSubscriptionRemovalCount() { return this.app.animationController ? this.app.animationController.caseUpdateSubscriptionRemovalCount : 0; },
         get geometryDisposeCount() { return ResourceDisposer.geometryDisposeCount; },
         get materialDisposeCount() { return ResourceDisposer.materialDisposeCount; },
         get eventListenerRemovalCount() { return ResourceDisposer.eventListenerRemovalCount; },
@@ -204,6 +205,9 @@ class App {
     if (this.currentTemplateInstance) {
       this.currentTemplateInstance.dispose();
       this.currentTemplateInstance = null;
+      if (this.animationController) {
+        this.animationController.notifyCaseUnsubscribed();
+      }
     }
     if (this.currentTemplateGroup) {
       ResourceDisposer.disposeObject(this.currentTemplateGroup);

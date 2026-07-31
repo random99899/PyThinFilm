@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "half_wave_single_layer",
   "title": "半波长单层薄膜",
-  "source_commit": "0fc324922f04347b40656dfe4658b182e1bdf160",
+  "source_commit": "9fd078645c7a5a4642b555adce4a2ed93db76fca",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_half_wave_single_layer_layers",
-  "generated_at": "2026-07-29T15:51:52.264625",
+  "generated_at": "2026-07-31T10:40:22.795635",
   "calculation_source": "python_export",
   "visualization_template": "single-interface",
   "incidence_angle_deg": 45.0,
@@ -1309,5 +1309,5 @@
   "input_parameter_hash": "82dad5299d240a2b",
   "physics_input_hash": "627b0eeecbdb091a",
   "physics_result_hash": "991a7006fb361063",
-  "result_hash": "0aff8b027f092f52"
+  "result_hash": "24b2245c777d6516"
 }
