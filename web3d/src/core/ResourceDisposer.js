@@ -1,6 +1,10 @@
 import * as THREE from "three";
 
 export class ResourceDisposer {
+  static geometryDisposeCount = 0;
+  static materialDisposeCount = 0;
+  static eventListenerRemovalCount = 0;
+
   static disposeObject(obj) {
     if (!obj) return;
 
@@ -9,6 +13,7 @@ export class ResourceDisposer {
       if (child.isMesh || child.isLine || child.isPoints) {
         if (child.geometry) {
           child.geometry.dispose();
+          ResourceDisposer.geometryDisposeCount += 1;
         }
         if (child.material) {
           if (Array.isArray(child.material)) {
@@ -42,6 +47,7 @@ export class ResourceDisposer {
     });
 
     mat.dispose();
+    ResourceDisposer.materialDisposeCount += 1;
   }
 
   static disposeScene(scene) {

@@ -8,7 +8,11 @@ export class DefectCavityTemplate {
     this.group.name = "DefectCavityTemplateGroup";
     this.waveRenderer = new SineWaveRenderer();
     this.group.add(this.waveRenderer.getGroup());
-    this.animationSemantics = "STANDING_WAVE_SUPERPOSITION";
+    
+    // Explicit teaching semantics downgrade
+    this.animationSemantics = "STANDING_WAVE_ILLUSTRATION";
+    this.fieldAmplitudeSource = "VISUAL_EQUAL_AMPLITUDE";
+    this.quantitativeFieldStatus = "NOT_AVAILABLE";
   }
 
   build(caseResult, options = {}) {
@@ -125,7 +129,7 @@ export class DefectCavityTemplate {
         pol: polarization,
         color: 0x10b981,
       },
-      // True F-P Standing Wave Superposition in Defect Cavity Layer
+      // Teaching standing wave illustration: Equal-amplitude visual superposition
       {
         id: "cavity_standing_wave_superposition",
         start: cavityTop,

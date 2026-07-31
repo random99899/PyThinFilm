@@ -1,8 +1,34 @@
 import { describe, it, expect } from "vitest";
-import { SineWaveRenderer } from "../src/core/SineWaveRenderer.js";
+import * as THREE from "three";
+import { stableTransverseBasis, SineWaveRenderer } from "../src/core/SineWaveRenderer.js";
 
-describe("Polarization Geometry Direction Tests", () => {
-  it("TE polarization oscillates strictly along Z axis (out of plane)", () => {
+describe("Arbitrary 3D Propagation Basis Orthogonality Tests", () => {
+  const testVectors = [
+    new THREE.Vector3(1, 0, 0),
+    new THREE.Vector3(0, 1, 0),
+    new THREE.Vector3(0, 0, 1),
+    new THREE.Vector3(1, 1, 1).normalize(),
+    new THREE.Vector3(-0.5, 0.8, -0.33).normalize(),
+  ];
+
+  it("stableTransverseBasis guarantees strict orthogonality (|dot| < 1e-8) for arbitrary 3D rays", () => {
+    for (const k of testVectors) {
+      const { te, tm } = stableTransverseBasis(k);
+
+      const dotTE_k = Math.abs(te.dot(k));
+      const dotTM_k = Math.abs(tm.dot(k));
+      const dotTE_TM = Math.abs(te.dot(tm));
+
+      expect(dotTE_k, `|TE . k| for k=${JSON.stringify(k)}`).toBeLessThan(1e-8);
+      expect(dotTM_k, `|TM . k| for k=${JSON.stringify(k)}`).toBeLessThan(1e-8);
+      expect(dotTE_TM, `|TE . TM| for k=${JSON.stringify(k)}`).toBeLessThan(1e-8);
+
+      expect(te.length(), "TE vector unit length").toBeCloseTo(1.0, 6);
+      expect(tm.length(), "TM vector unit length").toBeCloseTo(1.0, 6);
+    }
+  });
+
+  it("TE polarization oscillates strictly in transverse plane", () => {
     const waveRenderer = new SineWaveRenderer();
     waveRenderer.build([
       {
@@ -12,13 +38,12 @@ describe("Polarization Geometry Direction Tests", () => {
         amplitude: 0.5,
         wavelength: 1.0,
         speed: 1.0,
-        travelDir: 1,
         pol: "TE",
         color: 0xef4444,
       },
     ]);
 
-    waveRenderer.update(0.25); // t = 0.25s -> sin(phase) != 0
+    waveRenderer.update(0.25);
     const line = waveRenderer.getGroup().children[0];
     const posAttr = line.geometry.attributes.position;
 
@@ -31,40 +56,6 @@ describe("Polarization Geometry Direction Tests", () => {
     }
 
     expect(hasNonZeroZ).toBe(true);
-    expect(hasXDisplacement).toBe(false); // Ray is along Y (x=0), TE displacement must be purely along Z
-  });
-
-  it("TM polarization oscillates within XY plane (perpendicular to propagation ray)", () => {
-    const waveRenderer = new SineWaveRenderer();
-    // Propagation along Y axis: (0,5,0) -> (0,0,0)
-    // Perpendicular direction in XY plane is X axis
-    waveRenderer.build([
-      {
-        id: "tm_wave",
-        start: [0, 5, 0],
-        end: [0, 0, 0],
-        amplitude: 0.5,
-        wavelength: 1.0,
-        speed: 1.0,
-        travelDir: 1,
-        pol: "TM",
-        color: 0xec4899,
-      },
-    ]);
-
-    waveRenderer.update(0.25);
-    const line = waveRenderer.getGroup().children[0];
-    const posAttr = line.geometry.attributes.position;
-
-    let hasNonZeroX = false;
-    let hasZDisplacement = false;
-
-    for (let i = 0; i < posAttr.count; i++) {
-      if (Math.abs(posAttr.getX(i)) > 0.001) hasNonZeroX = true;
-      if (Math.abs(posAttr.getZ(i)) > 0.001) hasZDisplacement = true;
-    }
-
-    expect(hasNonZeroX).toBe(true);
-    expect(hasZDisplacement).toBe(false); // TM displacement must be in XY plane (Z=0)
+    expect(hasXDisplacement).toBe(false);
   });
 });

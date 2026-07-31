@@ -3,33 +3,74 @@
  *
  * Renders dynamically propagating polarized sine waves along ray paths.
  *
- * Rigorous Wave Kinematics:
+ * Wave Kinematics:
  *   - Ray path goes from start point P0 to end point P1 (len = |P1 - P0|, kVec = (P1 - P0)/len).
  *   - Distance s along ray: s ∈ [0, len].
  *   - Forward propagation along kVec: Phase = k*s - ω*t + φ.
  *   - Peak velocity v_phase = +ω/k along +s direction (toward end point P1).
- *     * Incident wave (air -> interface): travels toward interface (P1).
- *     * Reflected wave (interface -> air): P0 is interface, P1 is away in air. Wave travels away from interface!
- *     * Transmitted wave (interface -> substrate): travels into substrate (P1).
  *
- * Vector Polarization:
+ * Vector Polarization (Any 3D Ray Direction):
  *   - Given ray direction kVec and interface normal nVec (default (0, 1, 0)):
- *     TE_dir = normalize(kVec × nVec)
- *     If |kVec × nVec| < 1e-5 (Normal Incidence), TE_dir = (0, 0, 1)
- *     TM_dir = normalize(TE_dir × kVec)
- *   - Assertion: dot(TE_dir, kVec) == 0 and dot(TM_dir, kVec) == 0 (Transverse wave constraint).
+ *     If |kVec × nVec| > 1e-4, teDir = normalize(kVec × nVec).
+ *     Otherwise (degenerate / near normal incidence), compute stableTransverseBasis(kVec):
+ *       Select axis in {X, Y, Z} with minimum |axis · kVec| as reference.
+ *       teDir = normalize(kVec × referenceAxis)
+ *     tmDir = normalize(teDir × kVec)
+ *   - Strict Transverse Orthogonality Assertions (tolerance < 1e-8):
+ *     |teDir · kVec| < 1e-8
+ *     |tmDir · kVec| < 1e-8
+ *     |teDir · tmDir| < 1e-8
  *
- * Standing Wave Superposition (F-P Cavity):
- *   - E_total(s, t) = A_f * sin(k*s - ω*t + φ_f) + A_b * sin(k*(len - s) - ω*t + φ_b)
- *   - Real standing wave nodes remain stationary while anti-nodes oscillate in time.
- *
- * Debug Interface:
- *   Exposes window.__WEB3D_DEBUG__ for live programmatic verification of wave positions & disposes.
+ * F-P Standing Wave Teaching Semantics:
+ *   - animationSemantics = "STANDING_WAVE_ILLUSTRATION"
+ *   - fieldAmplitudeSource = "VISUAL_EQUAL_AMPLITUDE"
+ *   - quantitativeFieldStatus = "NOT_AVAILABLE"
  */
 
 import * as THREE from 'three';
+import { ResourceDisposer } from './ResourceDisposer.js';
 
 export const WAVE_SEGMENTS = 100; // polyline sample count
+
+/**
+ * Computes a numerically stable transverse basis (TE, TM) for ANY 3D propagation vector kVec.
+ * Guarantees |te · k| < 1e-8, |tm · k| < 1e-8, and |te · tm| < 1e-8.
+ */
+export function stableTransverseBasis(kVec, nVec = new THREE.Vector3(0, 1, 0)) {
+  const k = kVec.clone().normalize();
+  const n = nVec.clone().normalize();
+
+  let te = new THREE.Vector3().crossVectors(k, n);
+  if (te.lengthSq() < 1e-6) {
+    // Degenerate (k || n): select coordinate axis with minimum dot product magnitude
+    const axes = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 1),
+    ];
+    let minDot = Math.abs(axes[0].dot(k));
+    let reference = axes[0];
+
+    for (let i = 1; i < axes.length; i++) {
+      const dot = Math.abs(axes[i].dot(k));
+      if (dot < minDot) {
+        minDot = dot;
+        reference = axes[i];
+      }
+    }
+    te.crossVectors(k, reference);
+  }
+  te.normalize();
+
+  const tm = new THREE.Vector3().crossVectors(te, k).normalize();
+
+  // Strict orthogonality check
+  if (Math.abs(te.dot(k)) > 1e-8 || Math.abs(tm.dot(k)) > 1e-8 || Math.abs(te.dot(tm)) > 1e-8) {
+    console.warn(`[stableTransverseBasis] Orthogonality precision warning for k=${JSON.stringify(k)}`);
+  }
+
+  return { te, tm };
+}
 
 export class SineWaveRenderer {
   constructor() {
@@ -42,26 +83,6 @@ export class SineWaveRenderer {
     this._id = SineWaveRenderer._instanceCount;
   }
 
-  /**
-   * Build wave geometry from an array of wave descriptors.
-   * Disposes any existing waves first.
-   *
-   * @param {WaveDescriptor[]} descriptors
-   * WaveDescriptor = {
-   *   id: string,
-   *   start: [x,y,z],
-   *   end: [x,y,z],
-   *   amplitude: number,          // visual peak displacement (scene units)
-   *   wavelength: number,         // visual wavelength (scene units)
-   *   speed: number,              // visual wave speed (units/s)
-   *   pol: 'TE' | 'TM',
-   *   color: number,              // 0xRRGGBB
-   *   phaseOffset: number,        // radians, optional
-   *   amplitudeEnvelope: number[] | null,  // per-sample amplitude scale [0,1], optional
-   *   isSuperposition: boolean,   // if true, calculates true standing wave E_forward + E_backward
-   *   interfaceNormal: [x,y,z],  // optional, default [0,1,0]
-   * }
-   */
   build(descriptors) {
     this.dispose();
     if (!descriptors || descriptors.length === 0) return;
@@ -74,33 +95,15 @@ export class SineWaveRenderer {
       if (len < 1e-6) continue;
       const kVec    = dirVec.clone().normalize();
 
-      // Interface normal vector for TE/TM polarization plane decomposition
       const nVec = new THREE.Vector3(...(d.interfaceNormal || [0, 1, 0])).normalize();
 
-      // Transverse vector calculations
-      let teDir = new THREE.Vector3().crossVectors(kVec, nVec);
-      if (teDir.lengthSq() < 1e-6) {
-        // Normal incidence degeneracy fallback: TE along Z-axis
-        teDir.set(0, 0, 1);
-      } else {
-        teDir.normalize();
-      }
-
-      let tmDir = new THREE.Vector3().crossVectors(teDir, kVec).normalize();
-
-      // Polarization direction vector
-      const polVec = (d.pol === 'TE' ? teDir : tmDir).clone();
-
-      // Strict Transverse Constraint Assertion
-      const dotCheck = Math.abs(polVec.dot(kVec));
-      if (dotCheck > 1e-4) {
-        console.warn(`[SineWaveRenderer] Polarization vector is not strictly transverse to ray direction: dot = ${dotCheck}`);
-      }
+      // Compute stable transverse basis
+      const { te, tm } = stableTransverseBasis(kVec, nVec);
+      const polVec = (d.pol === 'TE' ? te : tm).clone();
 
       const k     = (2 * Math.PI) / Math.max(d.wavelength, 0.01);
       const omega = d.speed * k;
 
-      // Dynamic Draw Buffer Attribute Pre-allocation
       const positions = new Float32Array(WAVE_SEGMENTS * 3);
       const geo = new THREE.BufferGeometry();
       const bufAttr = new THREE.BufferAttribute(positions, 3);
@@ -125,14 +128,9 @@ export class SineWaveRenderer {
       this._lines.push(line);
     }
 
-    // Draw initial frame at t=0
     this.update(0);
   }
 
-  /**
-   * Update all wave geometries for the given elapsed time.
-   * Pure in-place BufferAttribute mutation.
-   */
   update(time) {
     for (const w of this._waves) {
       const {
@@ -146,25 +144,20 @@ export class SineWaveRenderer {
       for (let i = 0; i < N; i++) {
         const s = (i / (N - 1)) * len;
 
-        // Base coordinate along ray
         const bx = startV.x + kVec.x * s;
         const by = startV.y + kVec.y * s;
         const bz = startV.z + kVec.z * s;
 
         let disp = 0;
         if (isSuperposition) {
-          // Standing Wave Superposition: E_forward + E_backward
-          // E_forward  = A * sin(k*s - ω*t + φ)
-          // E_backward = A * sin(k*(len - s) - ω*t + φ)
+          // Standing wave equal-amplitude visual superposition
           const fwd = amplitude * Math.sin(k * s - omega * time + phaseOffset);
           const bwd = amplitude * Math.sin(k * (len - s) - omega * time + phaseOffset);
           disp = fwd + bwd;
         } else {
-          // Standard Forward Propagation Wave
-          // Phase = k*s - ω*t + φ
           const phase = k * s - omega * time + phaseOffset;
           let amp = amplitude;
-          if (amplitudeEnvelope !== null) {
+          if (amplitudeEnvelope !== null && amplitudeEnvelope.length > 0) {
             const envIdx = Math.min(
               Math.floor((i / N) * amplitudeEnvelope.length),
               amplitudeEnvelope.length - 1
@@ -185,8 +178,7 @@ export class SineWaveRenderer {
 
   dispose() {
     for (const line of this._lines) {
-      if (line.geometry) line.geometry.dispose();
-      if (line.material) line.material.dispose();
+      ResourceDisposer.disposeObject(line);
       this._group.remove(line);
     }
     this._waves = [];

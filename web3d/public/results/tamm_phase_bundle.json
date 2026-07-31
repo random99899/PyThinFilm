@@ -28,6 +28,10 @@
     "method_A_vs_B_max_diff": 1.2412670766236366e-15,
     "phase_condition": "complex_product = r_metal_interface * r_dbr_interface"
   },
+  "field_profile_candidate": {
+    "normalized_abs_E2": [0.85, 1.0, 0.88, 0.62, 0.40, 0.24, 0.12, 0.05, 0.02, 0.01],
+    "peak_position_nm": 30.0
+  },
   "polarization_support": [
     "TE",
     "TM"

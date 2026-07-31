@@ -55,7 +55,13 @@ class App {
       // Expose debug interface for automated E2E & unit inspection
       window.__WEB3D_DEBUG__ = {
         app: this,
-        get rendererInstanceCount() { return 1; },
+        get rendererInstanceCount() { return this.app.rendererLifecycle && this.app.rendererLifecycle.renderer ? 1 : 0; },
+        get rendererDisposeCount() { return this.app.rendererLifecycle ? this.app.rendererLifecycle.rendererDisposeCount : 0; },
+        get forceContextLossCount() { return this.app.rendererLifecycle ? this.app.rendererLifecycle.contextLossCount : 0; },
+        get animationCancelCount() { return this.app.rendererLifecycle ? this.app.rendererLifecycle.animationCancelCount : 0; },
+        get geometryDisposeCount() { return ResourceDisposer.geometryDisposeCount; },
+        get materialDisposeCount() { return ResourceDisposer.materialDisposeCount; },
+        get eventListenerRemovalCount() { return ResourceDisposer.eventListenerRemovalCount; },
         get activeWaveCount() {
           return (this.app.currentTemplateInstance && this.app.currentTemplateInstance.waveRenderer)
             ? this.app.currentTemplateInstance.waveRenderer.waveCount : 0;
@@ -66,9 +72,6 @@ class App {
         },
         get animationState() {
           return this.animationController ? { isPlaying: this.animationController.isPlaying, time: this.animationController.time } : null;
-        },
-        get forceContextLossCount() {
-          return this.rendererLifecycle ? this.rendererLifecycle.contextLossCount : 0;
         },
       };
 

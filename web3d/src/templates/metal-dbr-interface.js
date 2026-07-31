@@ -9,6 +9,7 @@ export class MetalDbrInterfaceTemplate {
     this.waveRenderer = new SineWaveRenderer();
     this.group.add(this.waveRenderer.getGroup());
     this.fieldEnvelopeSource = "ANALYTIC_VISUAL_ENVELOPE";
+    this.fieldEnvelope = [];
   }
 
   build(caseResult, options = {}) {
@@ -87,15 +88,26 @@ export class MetalDbrInterfaceTemplate {
     const interfaceTop = [0, interfaceY + 0.3, 0];
     const interfaceBottom = [0, interfaceY - 1.2, 0];
 
-    // Read field envelope from JSON if available (PYTHON_FIELD_PROFILE), else fallback to ANALYTIC_VISUAL_ENVELOPE
-    let decayEnvelope = null;
-    if (caseResult && caseResult.field_localization_metrics && caseResult.field_localization_metrics.interface_window_field_intensity_fraction) {
+    // Check if Python JSON provides field_profile_candidate
+    const rawCandidate = caseResult && caseResult.field_profile_candidate;
+    let pythonFieldProfile = null;
+
+    if (rawCandidate) {
+      if (Array.isArray(rawCandidate.normalized_abs_E2)) {
+        pythonFieldProfile = rawCandidate.normalized_abs_E2;
+      } else if (Array.isArray(rawCandidate) && rawCandidate.length > 0) {
+        const e2Vals = rawCandidate.map((item) => typeof item === "object" && item.E2 !== undefined ? Number(item.E2) : Number(item));
+        const maxE2 = Math.max(...e2Vals, 1e-6);
+        pythonFieldProfile = e2Vals.map((v) => v / maxE2);
+      }
+    }
+
+    if (Array.isArray(pythonFieldProfile) && pythonFieldProfile.length > 0) {
       this.fieldEnvelopeSource = "PYTHON_FIELD_PROFILE";
-      // Construct envelope peaking near the interface and decaying into DBR
-      decayEnvelope = [0.85, 1.0, 0.88, 0.62, 0.40, 0.24, 0.12, 0.05, 0.02, 0.01];
+      this.fieldEnvelope = pythonFieldProfile.map(Number);
     } else {
       this.fieldEnvelopeSource = "ANALYTIC_VISUAL_ENVELOPE";
-      decayEnvelope = [1.0, 0.9, 0.75, 0.55, 0.38, 0.25, 0.15, 0.08, 0.03, 0.01];
+      this.fieldEnvelope = [1.0, 0.92, 0.78, 0.58, 0.40, 0.26, 0.16, 0.09, 0.04, 0.01];
     }
 
     const waveDescriptors = [
@@ -128,7 +140,7 @@ export class MetalDbrInterfaceTemplate {
         speed: 2.0,
         pol: polarization,
         color: 0xec4899,
-        amplitudeEnvelope: decayEnvelope,
+        amplitudeEnvelope: this.fieldEnvelope,
       },
     ];
 

@@ -15,7 +15,9 @@ export class RendererLifecycle {
 
     // Instrumentation metrics for testing
     this.contextLossCount = 0;
+    this.rendererDisposeCount = 0;
     this.disposeCount = 0;
+    this.animationCancelCount = 0;
   }
 
   startLoop(renderCallback) {
@@ -34,6 +36,7 @@ export class RendererLifecycle {
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
+      this.animationCancelCount += 1;
     }
   }
 
@@ -60,6 +63,7 @@ export class RendererLifecycle {
       this.renderer.forceContextLoss();
       this.contextLossCount += 1;
       this.renderer.dispose();
+      this.rendererDisposeCount += 1;
       this.disposeCount += 1;
       if (this.renderer.domElement && this.renderer.domElement.parentNode) {
         this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
