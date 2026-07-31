@@ -64,3 +64,6 @@ _doc_review_*/
 .tmp_ref_render/
 _toc_page_fix_*/
 tmp/
+
+# Web3D local test results
+web3d/test-results/
