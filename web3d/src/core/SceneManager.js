@@ -49,4 +49,12 @@ export class SceneManager {
   getScene() {
     return this.scene;
   }
+
+  fitFogToCamera(camera, target) {
+    if (!this.scene.fog || !camera || !target) return false;
+    const distance = camera.position.distanceTo(target);
+    this.scene.fog.near = Math.max(18, distance * 0.55);
+    this.scene.fog.far = Math.max(36, distance * 1.9);
+    return true;
+  }
 }

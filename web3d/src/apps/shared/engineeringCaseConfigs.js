@@ -29,6 +29,68 @@ const fpPresets = Object.freeze([
 ]);
 
 export const ENGINEERING_CASE_CONFIGS = Object.freeze({
+  porous_sio2_layer: Object.freeze({
+    caseId: "porous_sio2_layer", slug: "porous-sio2-layer", title: "多孔二氧化硅减反结构",
+    kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 1, sceneName: "StandalonePorousSio2LayerScene",
+    presets: singleLayerPresets, classify: lowHighReflectance,
+    caveat: "正式光谱来自 porous_sio2_layer 的 Python 教学预设；多孔层按有效折射率模型表示。",
+  }),
+  porous_double_ar: Object.freeze({
+    caseId: "porous_double_ar", slug: "porous-double-ar", title: "多孔双层减反膜",
+    kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 2, sceneName: "StandalonePorousDoubleArScene",
+    presets: singleLayerPresets, classify: lowHighReflectance,
+    caveat: "两层结构、厚度和 R/T 均来自 Python porous_double_ar 正式导出。",
+  }),
+  moth_eye_effective_gradient: Object.freeze({
+    caseId: "moth_eye_effective_gradient", slug: "moth-eye-gradient", title: "蛾眼等效渐变层减反膜",
+    kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 5, sceneName: "StandaloneMothEyeGradientScene",
+    presets: singleLayerPresets, classify: lowHighReflectance,
+    caveat: "五层阶梯只表示 Python 中的等效渐变近似，不绘制亚波长蛾眼微结构。",
+  }),
+  double_ar: Object.freeze({
+    caseId: "double_ar", slug: "double-ar", title: "双层减反射膜",
+    kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 2, sceneName: "StandaloneDoubleArScene",
+    presets: singleLayerPresets, classify: lowHighReflectance,
+    caveat: "最低反射、设计点与对照点均来自当前 Python 正式光谱。",
+  }),
+  quarter_wave_double_layer: Object.freeze({
+    caseId: "quarter_wave_double_layer", slug: "quarter-wave-double-layer", title: "四分之一波长双层减反膜",
+    kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 2, sceneName: "StandaloneQuarterWaveDoubleLayerScene",
+    presets: singleLayerPresets, classify: lowHighReflectance,
+    caveat: "V 形增透行为由正式 R/T 光谱判断，屏幕厚度不是物理比例尺。",
+  }),
+  triple_ar: Object.freeze({
+    caseId: "triple_ar", slug: "triple-ar", title: "三层渐变折射率减反膜",
+    kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 3, sceneName: "StandaloneTripleArScene",
+    presets: singleLayerPresets, classify: lowHighReflectance,
+    caveat: "三层正式层序和折射率角色保持 Python 导出，不套用太阳能案例材料。",
+  }),
+  fp_double_halfwave: Object.freeze({
+    caseId: "fp_double_halfwave", slug: "fp-double-halfwave", title: "双半波型 F-P 滤光片",
+    kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 21, sceneName: "StandaloneFpDoubleHalfwaveScene",
+    presets: fpPresets, classify: filterPassStop,
+    caveat: "二十一层双腔结构完整显示；外部示意波不是腔内定量驻波场。",
+  }),
+  rugate_filter: Object.freeze({
+    caseId: "rugate_filter", slug: "rugate-filter", title: "Rugate 褶皱渐变折射率滤光片",
+    kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 80, sceneName: "StandaloneRugateFilterScene",
+    presets: dbrPresets, classify: lowHighReflectance,
+    caveat: "连续折射率调制由八十层离散近似显示；全部层来自 Python 正式导出。",
+  }),
+  neutral_beamsplitter: Object.freeze({
+    caseId: "neutral_beamsplitter", slug: "neutral-beamsplitter", title: "中性分束膜",
+    kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 4, sceneName: "StandaloneNeutralBeamsplitterScene",
+    presets: Object.freeze([
+      { id: "design", label: "550 nm", wavelengthNm: 550 },
+      { id: "minimum", label: "最低反射", selector: "minR" },
+      { id: "maximum", label: "最高反射", selector: "maxR" },
+    ]),
+    classify({ r, t }) {
+      if (Math.abs(r - 0.5) <= 0.05 && Math.abs(t - 0.5) <= 0.05) return { id: "INTERMEDIATE", label: "近中性分束：R/T 接近 50/50" };
+      return { id: "RELATIVE_HIGH", label: "分束偏离：查看正式 R/T 数值" };
+    },
+    caveat: "分束性能依据 R 与 T 的数值平衡，不以两条示意波是否等宽作为定量判据。",
+  }),
   quarter_wave_single_layer: Object.freeze({
     caseId: "quarter_wave_single_layer", slug: "quarter-wave-single-layer", title: "1/4 波长单层减反射膜",
     kicker: "PyThinFilm · 独立教学案例", expectedLayerCount: 1, sceneName: "StandaloneQuarterWaveSingleLayerScene",

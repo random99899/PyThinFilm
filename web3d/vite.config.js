@@ -7,6 +7,9 @@ const additionalCaseSlugs = [
   "quarter-wave-single-layer", "half-wave-single-layer", "single-ar",
   "high-reflector", "quarter-wave-stack", "bragg-reflector",
   "fp-single-halfwave", "fp-filter", "narrowband-filter", "tamm-phase-bundle",
+  "porous-sio2-layer", "porous-double-ar", "moth-eye-gradient", "double-ar",
+  "quarter-wave-double-layer", "triple-ar", "fp-double-halfwave", "rugate-filter",
+  "neutral-beamsplitter",
 ];
 
 export default defineConfig({

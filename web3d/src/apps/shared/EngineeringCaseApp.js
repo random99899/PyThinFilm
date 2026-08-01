@@ -104,6 +104,7 @@ export class EngineeringCaseApp {
       selectedWavelengthNm: this.selectedWavelengthNm,
     }));
     this.cameraManager.setDefaultPreset("ISOMETRIC_SECTION", this.caseScene.getStructureBounds());
+    this.fitFogToCamera();
     window.addEventListener("resize", this.boundResize);
     this.rendererLifecycle.startLoop((timestamp) => {
       this.cameraManager.getControls()?.update();
@@ -125,6 +126,7 @@ export class EngineeringCaseApp {
       this.setWavelength(this.resolvePreset(this.config.presets[0]));
       if (this.polarization !== "TE") this.setPolarization("TE");
       this.cameraManager.resetView();
+      this.fitFogToCamera();
       this.caseScene.clearSelection();
     });
     bind("#btn-play-pause", () => {
@@ -138,7 +140,18 @@ export class EngineeringCaseApp {
     this.root.querySelector("#wavelength-slider")?.addEventListener("input", (event) => this.setWavelength(Number(event.target.value)));
   }
 
-  setCameraPreset(presetName) { return this.cameraManager.applyPreset(presetName, this.caseScene.getStructureBounds()); }
+  setCameraPreset(presetName) {
+    const applied = this.cameraManager.applyPreset(presetName, this.caseScene.getStructureBounds());
+    if (applied) this.fitFogToCamera();
+    return applied;
+  }
+
+  fitFogToCamera() {
+    return this.sceneManager.fitFogToCamera(
+      this.cameraManager.getCamera(),
+      this.cameraManager.getControls()?.target
+    );
+  }
 
   setWavelength(wavelengthNm) {
     this.selectedWavelengthNm = Number(wavelengthNm);

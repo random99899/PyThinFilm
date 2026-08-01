@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Export script for PyThinFilm 3D Visualization cases (Stage C.1.3).
 
-Exports canonical Python TMM calculation results for 10 physical cases:
+Exports canonical Python TMM calculation results for verified visualization cases.
 1. single_ar
 2. bragg_reflector
 3. fp_filter
@@ -33,6 +33,7 @@ if str(ROOT) not in sys.path:
 from thinfilm import simulate_report_design
 from thinfilm.education import (
     LayerSpec,
+    simulate_report_case,
     multilayer_rt_spectrum,
     reflection_phase_radians,
     build_fp_single_halfwave_layers,
@@ -40,6 +41,19 @@ from thinfilm.education import (
 )
 from thinfilm.field_profile import compute_tmm_1d_field_profile
 from thinfilm.spectral_metrics import compute_fine_resonance_linewidth, detect_stopband_segments
+
+
+ADDITIONAL_TEACHING_CASES = {
+    "porous_sio2_layer": ("多孔二氧化硅减反结构", "single-interface"),
+    "porous_double_ar": ("多孔双层减反膜", "single-interface"),
+    "moth_eye_effective_gradient": ("蛾眼等效渐变层减反膜", "periodic-stack"),
+    "double_ar": ("双层减反射膜", "single-interface"),
+    "quarter_wave_double_layer": ("四分之一波长双层减反膜", "single-interface"),
+    "triple_ar": ("三层渐变折射率减反膜", "single-interface"),
+    "fp_double_halfwave": ("双半波型 F-P 滤光片", "defect-cavity"),
+    "rugate_filter": ("Rugate 褶皱渐变折射率滤光片", "periodic-stack"),
+    "neutral_beamsplitter": ("中性分束膜", "single-interface"),
+}
 
 
 def get_git_commit_hash():
@@ -729,8 +743,12 @@ def export_generic_case(case_id: str, title: str, template: str):
     if case_id == "narrowband_filter":
         extra_kwargs = {"periods": 4}  # 17 layers: 4 HL pairs per side
 
-    res_te = simulate_report_design(case_id, theta_deg=45.0, pol="s", **extra_kwargs)
-    res_tm = simulate_report_design(case_id, theta_deg=45.0, pol="p", **extra_kwargs)
+    if case_id in ADDITIONAL_TEACHING_CASES:
+        res_te = simulate_report_case(case_id, theta_deg=45.0, pol="s", **extra_kwargs)
+        res_tm = simulate_report_case(case_id, theta_deg=45.0, pol="p", **extra_kwargs)
+    else:
+        res_te = simulate_report_design(case_id, theta_deg=45.0, pol="s", **extra_kwargs)
+        res_tm = simulate_report_design(case_id, theta_deg=45.0, pol="p", **extra_kwargs)
 
 
     wl = res_te["wavelength_nm"]
@@ -758,7 +776,7 @@ def export_generic_case(case_id: str, title: str, template: str):
     input_params = {
         "case_id": case_id,
         "theta_deg": 45.0,
-        "design_type": case_id,
+        "design_type": res_te.get("design_type", case_id),
     }
 
     case_specific_metrics = {}
@@ -845,6 +863,21 @@ def export_generic_case(case_id: str, title: str, template: str):
             },
             "resonance_validation_status": "PASSED",
         }
+    elif case_id in ADDITIONAL_TEACHING_CASES:
+        idx_min_r = int(np.argmin(r_te))
+        idx_max_r = int(np.argmax(r_te))
+        idx_max_t = int(np.argmax(t_te))
+        case_specific_metrics = {
+            "R_min": round(float(r_te[idx_min_r]), 6),
+            "wavelength_at_R_min_nm": round(float(wl[idx_min_r]), 2),
+            "R_max": round(float(r_te[idx_max_r]), 6),
+            "wavelength_at_R_max_nm": round(float(wl[idx_max_r]), 2),
+            "T_max": round(float(t_te[idx_max_t]), 6),
+            "wavelength_at_T_max_nm": round(float(wl[idx_max_t]), 2),
+            "formal_layer_count": len(layer_stack_info),
+        }
+        if case_id == "neutral_beamsplitter":
+            case_specific_metrics["split_error_at_550nm"] = round(abs(float(r_te[idx_550]) - 0.5), 6)
 
     data = {
         "schema_version": "1.0.0",
@@ -852,15 +885,15 @@ def export_generic_case(case_id: str, title: str, template: str):
         "title": title,
         "source_commit": get_git_commit_hash(),
         "source_file": "thinfilm/education.py",
-        "source_symbol": f"build_{case_id}_layers",
+        "source_symbol": "simulate_report_case" if case_id in ADDITIONAL_TEACHING_CASES else f"build_{case_id}_layers",
         "generated_at": datetime.datetime.now().isoformat(),
         "calculation_source": "python_export",
         "visualization_template": template,
         "incidence_angle_deg": 45.0,
         "polarization_support": ["TE", "TM"],
-        "ambient": {"name": "Air", "n": 1.0},
+        "ambient": {"name": "Air", "n": float(np.real(res_te.get("n_incident", 1.0)))},
         "layers": layer_stack_info,
-        "substrate": {"name": "Glass", "n": 1.52},
+        "substrate": {"name": "Glass", "n": float(np.real(res_te.get("n_substrate", 1.52)))},
         "wavelength_nm": [round(float(x), 2) for x in wl],
         "TE": {
             "R": [round(float(x), 6) for x in r_te],
@@ -987,6 +1020,9 @@ if __name__ == "__main__":
     export_generic_case("fp_single_halfwave", "单半波长F-P滤光片", "defect-cavity")
     export_generic_case("narrowband_filter", "窄带滤光片", "defect-cavity")
 
+    for additional_case_id, (additional_title, additional_template) in ADDITIONAL_TEACHING_CASES.items():
+        export_generic_case(additional_case_id, additional_title, additional_template)
+
     # Stage C.2.1B-1 Lossless Engineering Application Cases
     from examples.applications.solar_cell_ar import run_solar_cell_ar, build_solar_cell_ar_layers
     from examples.applications.wdm_filter import run_wdm_filter, build_wdm_filter_layers
@@ -1025,5 +1061,4 @@ if __name__ == "__main__":
         "GENERIC_MULTILAYER_MODE",
         {"stack": "Air/SiO2/ZrO2/MgF2/Glass", "standard": "fixed_defaults"},
     )
-
 

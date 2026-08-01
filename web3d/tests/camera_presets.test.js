@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { CameraManager } from "../src/core/CameraManager.js";
+import { SceneManager } from "../src/core/SceneManager.js";
 import { CAMERA_PRESETS, isValidCameraPreset } from "../src/visual/cameraPresets.js";
 
 describe("Stage C.V1A camera presets", () => {
@@ -32,5 +33,15 @@ describe("Stage C.V1A camera presets", () => {
     manager.resetView();
     expect(manager.currentPresetName).toBe("ISOMETRIC_SECTION");
     expect(manager.getCamera().position.distanceTo(defaultPosition)).toBeLessThan(1e-10);
+  });
+
+  it("extends academic fog for unusually tall structures", () => {
+    const sceneManager = new SceneManager();
+    sceneManager.applyVisualTheme("ACADEMIC_LIGHT");
+    const camera = new THREE.PerspectiveCamera();
+    camera.position.set(0, 0, 50);
+    expect(sceneManager.fitFogToCamera(camera, new THREE.Vector3())).toBe(true);
+    expect(sceneManager.getScene().fog.near).toBeGreaterThan(18);
+    expect(sceneManager.getScene().fog.far).toBeGreaterThan(36);
   });
 });
