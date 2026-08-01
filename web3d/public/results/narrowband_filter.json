@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "narrowband_filter",
   "title": "窄带滤光片",
-  "source_commit": "9fd078645c7a5a4642b555adce4a2ed93db76fca",
+  "source_commit": "833fdecbe849dcc7b4daa1cc4cb5fe32114363a9",
   "source_file": "thinfilm/education.py",
   "source_symbol": "build_narrowband_filter_layers",
-  "generated_at": "2026-07-31T10:40:22.981556",
+  "generated_at": "2026-08-01T15:02:46.023652",
   "calculation_source": "python_export",
   "visualization_template": "defect-cavity",
   "incidence_angle_deg": 45.0,
@@ -2746,5 +2746,5 @@
   "input_parameter_hash": "723a25d03cc61324",
   "physics_input_hash": "b336e97fe1a411e6",
   "physics_result_hash": "fc93b856f3897c93",
-  "result_hash": "c770682bd56f6d18"
+  "result_hash": "9982efb1f2ca5d5e"
 }

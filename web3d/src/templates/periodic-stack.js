@@ -1,6 +1,15 @@
 import * as THREE from "three";
 import { SineWaveRenderer } from "../core/SineWaveRenderer.js";
 
+const MATERIAL_COLOR_MAP = {
+  SiO2: 0x60a5fa, // Blue
+  TiO2: 0xf59e0b, // Amber
+  MgF2: 0x34d399, // Emerald Green
+  ZrO2: 0xa855f7, // Purple
+  Al2O3: 0xf43f5e, // Rose Red
+  Air: 0x93c5fd,  // Light Blue
+};
+
 export class PeriodicStackTemplate {
   constructor(container) {
     this.container = container;
@@ -8,6 +17,14 @@ export class PeriodicStackTemplate {
     this.group.name = "PeriodicStackTemplateGroup";
     this.waveRenderer = new SineWaveRenderer();
     this.group.add(this.waveRenderer.getGroup());
+    this.isGenericMultilayerMode = false;
+  }
+
+  getMaterialColor(matName, isH) {
+    if (matName && MATERIAL_COLOR_MAP[matName]) {
+      return MATERIAL_COLOR_MAP[matName];
+    }
+    return isH ? 0xf59e0b : 0x60a5fa;
   }
 
   build(caseResult, options = {}) {
@@ -18,14 +35,15 @@ export class PeriodicStackTemplate {
     const polarization = options.polarization || "TE";
 
     const layersData = (caseResult && caseResult.layers) ? caseResult.layers : [
-      { layer_index: 1, type: "H", n: 2.15, thickness_nm: 63.95 },
-      { layer_index: 2, type: "L", n: 1.38, thickness_nm: 99.64 },
-      { layer_index: 3, type: "H", n: 2.15, thickness_nm: 63.95 },
-      { layer_index: 4, type: "L", n: 1.38, thickness_nm: 99.64 },
-      { layer_index: 5, type: "H", n: 2.15, thickness_nm: 63.95 },
-      { layer_index: 6, type: "L", n: 1.38, thickness_nm: 99.64 },
-      { layer_index: 7, type: "H", n: 2.15, thickness_nm: 63.95 },
+      { layer_index: 1, type: "H", name: "TiO2", n: 2.15, thickness_nm: 63.95 },
+      { layer_index: 2, type: "L", name: "SiO2", n: 1.38, thickness_nm: 99.64 },
+      { layer_index: 3, type: "H", name: "TiO2", n: 2.15, thickness_nm: 63.95 },
     ];
+
+    // Detect if case requires Generic Multilayer Mode
+    const uniqueMatNames = new Set(layersData.map((l) => l.name || l.type).filter(Boolean));
+    const hasPeriodicHL = layersData.every((l) => l.type === "H" || l.type === "L");
+    this.isGenericMultilayerMode = uniqueMatNames.size > 2 || !hasPeriodicHL;
 
     let currentY = 0;
     const width = 6;
@@ -42,7 +60,7 @@ export class PeriodicStackTemplate {
     layersData.forEach((layer) => {
       const isH = layer.type === "H";
       const thicknessVisual = Math.max(0.18, (layer.thickness_nm || 80) / 220);
-      const color = isH ? 0xf59e0b : 0x60a5fa;
+      const color = this.getMaterialColor(layer.name, isH);
 
       const geo = new THREE.BoxGeometry(width, thicknessVisual, depth);
       const mat = new THREE.MeshStandardMaterial({

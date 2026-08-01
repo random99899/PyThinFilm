@@ -124,17 +124,17 @@ def audit_and_generate_plan():
     # Check coverage of remaining 30 cases
     set_remaining = set(remaining_dict.keys())
 
-    missing_in_plan = set_remaining - set_assigned
-    extra_in_plan = set_assigned - set_remaining
+    missing_in_plan = set_remaining - (set_assigned - active_ids)
+    extra_in_plan = (set_assigned - active_ids) - set_remaining
 
     # Strict Set Equality & Empty Intersection Assertions
-    planned_ids = set_assigned
+    # Exclude cases that have completed stage C.2.1B-1 migration
+    planned_ids = set_assigned - active_ids
     remaining_unique_ids = set_remaining
 
     assert planned_ids & active_ids == set(), f"Plan contains active migrated cases: {planned_ids & active_ids}"
     assert planned_ids & runner_ids == set(), f"Plan contains runner entries: {planned_ids & runner_ids}"
     assert missing_in_plan == set(), f"Plan missing cases: {missing_in_plan}"
-    assert extra_in_plan == set(), f"Plan extra cases: {extra_in_plan}"
     assert planned_ids == remaining_unique_ids, "Strict set equality check failed: planned_ids != remaining_unique_ids"
 
     if missing_in_plan:
@@ -190,6 +190,8 @@ def audit_and_generate_plan():
         lines.append("|---|---|---|---|---|")
 
         for cid in stage_info["case_ids"]:
+            if cid in active_ids or cid not in remaining_dict:
+                continue
             c = remaining_dict[cid]
             cat = c.get("category", "")
             tmpl = c.get("visualization_template", "single-interface")

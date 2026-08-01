@@ -28,10 +28,6 @@
 
 | Case ID | Category | Template Requirement | Variant Of / Equivalence | Data Dependencies |
 |---|---|---|---|---|
-| `app_solar_cell_ar` | `engineering_applications` | NEW_TEMPLATE (`engineering-device`) | `UNIQUE` | `NONE` |
-| `app_wdm_filter` | `engineering_applications` | NEW_TEMPLATE (`engineering-device`) | `UNIQUE` | `NONE` |
-| `app_laser_mirror` | `engineering_applications` | NEW_TEMPLATE (`engineering-device`) | `UNIQUE` | `NONE` |
-| `app_phone_lens_ar` | `engineering_applications` | NEW_TEMPLATE (`engineering-device`) | `UNIQUE` | `NONE` |
 | `app_smart_window` | `engineering_applications` | NEW_TEMPLATE (`engineering-device`) | `UNIQUE` | `NONE` |
 
 ### Stage C.2.2: Advanced Anti-Reflection & Periodic Multi-layers (10 Cases)

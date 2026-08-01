@@ -901,6 +901,57 @@ def export_generic_case(case_id: str, title: str, template: str):
     print(f"[export] Successfully exported {case_id} results -> {out_file}")
 
 
+def export_engineering_case(case_id: str, runner_fn, builder_fn, template_name: str):
+    out_dir = ROOT / "web3d" / "public" / "results"
+    out_file = out_dir / f"{case_id}.json"
+    raw_res = runner_fn()
+    wls = raw_res["wavelengths_nm"]
+
+    formal_layers = builder_fn()
+    layers_data = []
+    for ly in formal_layers:
+        layers_data.append({
+            "name": ly.name,
+            "thickness_nm": round(float(ly.thickness_nm), 4),
+            "n": str(ly.n),
+        })
+
+    struct = raw_res.get("structure", {})
+    data = {
+        "schema_version": "1.0.0",
+        "case_id": case_id,
+        "title": raw_res.get("title", case_id),
+        "export_time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "git_commit": get_git_commit_hash(),
+        "visualization_template": template_name,
+        "ambient": {"name": "Air", "n": 1.0},
+        "substrate": {"name": str(struct.get("substrate", "Substrate")), "n": str(struct.get("substrate", "1.46"))},
+        "layers": layers_data,
+        "coating_layer_count": len(layers_data),
+        "wavelength_nm": [round(float(w), 3) for w in wls],
+        "TE": {
+            "R": [round(float(x), 6) for x in raw_res["R"]],
+            "T": [round(float(x), 6) for x in raw_res["T"]],
+            "A": [round(float(x), 6) for x in raw_res["A"]],
+        },
+        "TM": {
+            "R": [round(float(x), 6) for x in raw_res["R"]],
+            "T": [round(float(x), 6) for x in raw_res["T"]],
+            "A": [round(float(x), 6) for x in raw_res["A"]],
+        },
+        "metrics": raw_res.get("metrics", {}),
+        "physics": raw_res.get("physics", {}),
+        "animation_semantics": "STANDING_WAVE_ILLUSTRATION" if "wdm" in case_id else "TEACHING_ILLUSTRATION",
+    }
+
+    pin_hash, pres_hash = compute_physics_hashes(data)
+    data["physics_input_hash"] = pin_hash
+    data["physics_result_hash"] = pres_hash
+    data["result_hash"] = compute_hash(data)
+    out_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"[export] Successfully exported engineering case {case_id} -> {out_file}")
+
+
 if __name__ == "__main__":
     export_single_ar()
     export_bragg_reflector()
@@ -913,3 +964,16 @@ if __name__ == "__main__":
     export_generic_case("quarter_wave_stack", "四分之一波长堆栈", "periodic-stack")
     export_generic_case("fp_single_halfwave", "单半波长F-P滤光片", "defect-cavity")
     export_generic_case("narrowband_filter", "窄带滤光片", "defect-cavity")
+
+    # Stage C.2.1B-1 Lossless Engineering Application Cases
+    from examples.applications.solar_cell_ar import run_solar_cell_ar, build_solar_cell_ar_layers
+    from examples.applications.wdm_filter import run_wdm_filter, build_wdm_filter_layers
+    from examples.applications.laser_mirror import run_laser_mirror, build_laser_mirror_layers
+    from examples.applications.phone_lens_ar import run_phone_lens_ar, build_phone_lens_ar_layers
+
+    export_engineering_case("app_solar_cell_ar", run_solar_cell_ar, build_solar_cell_ar_layers, "periodic-stack")
+    export_engineering_case("app_wdm_filter", run_wdm_filter, build_wdm_filter_layers, "defect-cavity")
+    export_engineering_case("app_laser_mirror", run_laser_mirror, lambda: build_laser_mirror_layers(8), "periodic-stack")
+    export_engineering_case("app_phone_lens_ar", run_phone_lens_ar, build_phone_lens_ar_layers, "periodic-stack")
+
+

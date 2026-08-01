@@ -71,14 +71,22 @@ class App {
           return (this.currentTemplateInstance && this.currentTemplateInstance.waveRenderer)
             ? this.currentTemplateInstance.waveRenderer.getWavePositions() : [];
         },
+        get currentCaseConfig() { return this.app.currentCaseConfig; },
+        get currentCaseResult() { return this.app.currentCaseResult; },
         get animationState() {
           return this.animationController ? { isPlaying: this.animationController.isPlaying, time: this.animationController.time } : null;
         },
       };
 
-      // Load first case by default
-      if (this.registry.cases && this.registry.cases.length > 0) {
-        await this.loadCase(this.registry.cases[0].id);
+      // Check URL query parameters for initial case (e.g. ?case=app_solar_cell_ar)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCaseId = urlParams.get("case");
+      const targetCaseId = (urlCaseId && this.registry.cases.some((c) => c.id === urlCaseId))
+        ? urlCaseId
+        : (this.registry.cases && this.registry.cases.length > 0 ? this.registry.cases[0].id : null);
+
+      if (targetCaseId) {
+        await this.loadCase(targetCaseId);
       }
     } catch (err) {
       showErrorModal("引擎初始化失败", err.message);

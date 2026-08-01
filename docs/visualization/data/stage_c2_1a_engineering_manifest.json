@@ -1,7 +1,7 @@
 {
-  "schema_version": "1.1.0",
-  "stage": "Stage C.2.1A.1",
-  "title": "Engineering Application Cases Source & Structure Manifest (Revised)",
+  "schema_version": "1.2.0",
+  "stage": "Stage C.2.1A.1 Gate Passed",
+  "title": "Engineering Application Cases Source & Structure Manifest",
   "audit_cases_count": 5,
   "cases": [
     {
@@ -32,6 +32,7 @@
         }
       ],
       "physics_input_hash": "547a2616f74e634d",
+      "hash_evidence_source": "FORMAL_CONSTRUCTOR",
       "energy_validation_type": "ALGEBRAIC_CLOSURE",
       "energy_closure_residual": 6.661338147750939e-16,
       "formal_metrics": [
@@ -71,7 +72,7 @@
       "template_requirement": "EXTEND_EXISTING",
       "candidate_template": "periodic-stack",
       "required_extension": "GENERIC_MULTILAYER_MODE",
-      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+      "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
       "variant_of": null,
       "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
       "audit_status": "SOURCE_AUDIT_PASSED"
@@ -177,6 +178,7 @@
         }
       ],
       "physics_input_hash": "cc4364e42f8c8c9f",
+      "hash_evidence_source": "FORMAL_CONSTRUCTOR",
       "energy_validation_type": "ALGEBRAIC_CLOSURE",
       "energy_closure_residual": 2.7755575615628914e-15,
       "formal_metrics": [
@@ -219,7 +221,7 @@
       ],
       "template_requirement": "REUSE_EXISTING",
       "candidate_template": "defect-cavity",
-      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+      "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
       "variant_of": null,
       "dynamic_wave_mode": "FORWARD_BACKWARD_WAVE_ILLUSTRATION",
       "audit_status": "SOURCE_AUDIT_PASSED"
@@ -324,6 +326,7 @@
         }
       ],
       "physics_input_hash": "f83dab6828173052",
+      "hash_evidence_source": "FORMAL_CONSTRUCTOR",
       "energy_validation_type": "ALGEBRAIC_CLOSURE",
       "energy_closure_residual": 3.1086244689504383e-15,
       "formal_metrics": [
@@ -354,7 +357,7 @@
       ],
       "template_requirement": "REUSE_EXISTING",
       "candidate_template": "periodic-stack",
-      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+      "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
       "variant_of": null,
       "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
       "audit_status": "SOURCE_AUDIT_PASSED"
@@ -387,6 +390,7 @@
         }
       ],
       "physics_input_hash": "b58fbf8d4dbda27f",
+      "hash_evidence_source": "FORMAL_CONSTRUCTOR",
       "energy_validation_type": "ALGEBRAIC_CLOSURE",
       "energy_closure_residual": 7.771561172376096e-16,
       "formal_metrics": [
@@ -438,7 +442,7 @@
       "template_requirement": "EXTEND_EXISTING",
       "candidate_template": "periodic-stack",
       "required_extension": "GENERIC_MULTILAYER_MODE",
-      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+      "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
       "variant_of": null,
       "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
       "audit_status": "SOURCE_AUDIT_PASSED"
@@ -471,12 +475,18 @@
         }
       ],
       "physics_input_hash": "0223f508f0273bf4",
+      "hash_evidence_source": "FORMAL_CONSTRUCTOR",
       "energy_validation_type": "ALGEBRAIC_CLOSURE",
       "energy_closure_residual": 1.1102230246251565e-16,
       "absorption_verification": {
         "ag_imaginary_k": 3.2,
-        "max_A_with_loss": 0.04556541897505728,
-        "max_A_lossless_control": 0.0,
+        "min_A_lossy": 0.007573692754340944,
+        "max_A_lossy": 0.04556541897505728,
+        "mean_A_lossy": 0.013625379802369548,
+        "mean_A_lossless": 0.0,
+        "max_A_lossless": 0.0,
+        "absorption_metric_type": "TOTAL_STACK_ABSORPTANCE",
+        "layer_resolved_absorption_status": "NOT_AVAILABLE",
         "absorption_verified": true
       },
       "formal_metrics": [
@@ -539,7 +549,7 @@
       ],
       "template_requirement": "NEW_TEMPLATE_REQUIRED",
       "candidate_template": "absorber-stack",
-      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+      "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
       "variant_of": null,
       "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
       "audit_status": "SOURCE_AUDIT_PASSED"

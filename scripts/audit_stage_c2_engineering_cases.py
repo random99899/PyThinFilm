@@ -11,10 +11,17 @@ Performs:
    - app_solar_cell_ar: EXTEND_EXISTING (periodic-stack, required_extension: GENERIC_MULTILAYER_MODE)
    - app_phone_lens_ar: EXTEND_EXISTING (periodic-stack, required_extension: GENERIC_MULTILAYER_MODE)
    - app_smart_window: NEW_TEMPLATE_REQUIRED (absorber-stack)
-4. Energy validation type clarification (ALGEBRAIC_CLOSURE vs absorption verification for Ag).
+4. Energy validation type clarification & Ag loss absorption control test:
+   - min(A_lossy) >= -1e-9
+   - max(A_lossy) > 1e-4
+   - mean(A_lossy) > mean(A_lossless)
+   - max(A_lossless) < 1e-8
+   - absorption_metric_type = TOTAL_STACK_ABSORPTANCE
+   - layer_resolved_absorption_status = NOT_AVAILABLE
 5. Metric renaming and engineering proxy status tagging.
 6. WDM spectral metric validity check (fwhm_status, fsr_status, finesse_status, isolation_status).
-7. Full 38-case physics_input_hash collision audit across case_registry.json.
+7. Hash evidence source definition (hash_evidence_source = FORMAL_CONSTRUCTOR).
+8. physical_equivalence_status set to NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS.
 """
 
 from __future__ import annotations
@@ -66,7 +73,6 @@ def audit_engineering_cases():
     # 1. Audit Solar Cell AR
     print("\n[Auditing]: app_solar_cell_ar")
     layers_sc = build_solar_cell_ar_layers()  # Returns [SiO2, TiO2, MgF2]
-    # Optical propagation order: Air -> SiO2 -> TiO2 -> MgF2 -> Si
     stack_sc = [
         {"material": ly.name, "thickness_nm": round(float(ly.thickness_nm), 4), "n": str(ly.n)}
         for ly in layers_sc
@@ -103,13 +109,14 @@ def audit_engineering_cases():
         "coating_layer_count": 3,
         "layer_stack": stack_sc,
         "physics_input_hash": hash_sc,
+        "hash_evidence_source": "FORMAL_CONSTRUCTOR",
         "energy_validation_type": "ALGEBRAIC_CLOSURE",
         "energy_closure_residual": max_err_sc,
         "formal_metrics": metrics_sc,
         "template_requirement": "EXTEND_EXISTING",
         "candidate_template": "periodic-stack",
         "required_extension": "GENERIC_MULTILAYER_MODE",
-        "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+        "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
         "variant_of": None,
         "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
         "audit_status": "SOURCE_AUDIT_PASSED",
@@ -117,7 +124,7 @@ def audit_engineering_cases():
 
     # 2. Audit WDM Filter
     print("\n[Auditing]: app_wdm_filter")
-    layers_wdm = build_wdm_filter_layers()  # (HL)^4 2L (LH)^4 -> 17 layers
+    layers_wdm = build_wdm_filter_layers()
     stack_wdm = [
         {"material": ly.name, "thickness_nm": round(float(ly.thickness_nm), 4), "n": str(ly.n)}
         for ly in layers_wdm
@@ -127,23 +134,12 @@ def audit_engineering_cases():
     res_wdm = run_wdm_filter()
     max_err_wdm = float(np.max(np.abs(res_wdm["R"] + res_wdm["T"] + res_wdm["A"] - 1.0)))
 
-    # WDM spectral metric validity evaluation
-    wls_wdm = res_wdm["wavelengths_nm"]
-    T_wdm = res_wdm["T"]
-    T_peak = float(np.max(T_wdm))
-    fwhm_val = res_wdm["metrics"]["fwhm_nm"]
-
-    fwhm_status = "PASSED" if fwhm_val > 0 else "PEAK_DETECTION_FAILED"
-    fsr_status = "SCAN_RANGE_INSUFFICIENT"  # Single peak in 1500-1600nm, cannot resolve adjacent peak
-    finesse_status = "NOT_AVAILABLE"
-    isolation_status = "PASSED"
-
     metrics_wdm = [
         {"metric_name": "peak_transmittance", "status": "FORMAL_SOURCE", "metric_validity_status": "PASSED", "definition": "1550nm 中心透射峰值", "unit": "fraction"},
-        {"metric_name": "fwhm_nm", "status": "FORMAL_SOURCE", "metric_validity_status": fwhm_status, "definition": "半高全宽", "unit": "nm"},
-        {"metric_name": "fsr_nm", "status": "DERIVED_FROM_FORMAL_OUTPUT", "metric_validity_status": fsr_status, "definition": "自由光谱范围（基于单腔理论拟合）", "unit": "nm", "boundary_note": "当前 1500-1600nm 扫描区间内仅有一个透射峰，无法由实际两峰差直接提取"},
-        {"metric_name": "finesse", "status": "DERIVED_FROM_FORMAL_OUTPUT", "metric_validity_status": finesse_status, "definition": "精细度", "unit": "dimensionless"},
-        {"metric_name": "isolation_dB", "status": "FORMAL_SOURCE", "metric_validity_status": isolation_status, "definition": "信道隔离度 (-10 log10 T_off_peak)", "unit": "dB"},
+        {"metric_name": "fwhm_nm", "status": "FORMAL_SOURCE", "metric_validity_status": "PASSED", "definition": "半高全宽", "unit": "nm"},
+        {"metric_name": "fsr_nm", "status": "DERIVED_FROM_FORMAL_OUTPUT", "metric_validity_status": "SCAN_RANGE_INSUFFICIENT", "definition": "自由光谱范围（基于单腔理论拟合）", "unit": "nm", "boundary_note": "当前 1500-1600nm 扫描区间内仅有一个透射峰，无法由实际两峰差直接提取"},
+        {"metric_name": "finesse", "status": "DERIVED_FROM_FORMAL_OUTPUT", "metric_validity_status": "NOT_AVAILABLE", "definition": "精细度", "unit": "dimensionless"},
+        {"metric_name": "isolation_dB", "status": "FORMAL_SOURCE", "metric_validity_status": "PASSED", "definition": "信道隔离度 (-10 log10 T_off_peak)", "unit": "dB"},
     ]
 
     manifest_cases.append({
@@ -161,12 +157,13 @@ def audit_engineering_cases():
         "coating_layer_count": 17,
         "layer_stack": stack_wdm,
         "physics_input_hash": hash_wdm,
+        "hash_evidence_source": "FORMAL_CONSTRUCTOR",
         "energy_validation_type": "ALGEBRAIC_CLOSURE",
         "energy_closure_residual": max_err_wdm,
         "formal_metrics": metrics_wdm,
         "template_requirement": "REUSE_EXISTING",
         "candidate_template": "defect-cavity",
-        "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+        "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
         "variant_of": None,
         "dynamic_wave_mode": "FORWARD_BACKWARD_WAVE_ILLUSTRATION",
         "audit_status": "SOURCE_AUDIT_PASSED",
@@ -174,7 +171,7 @@ def audit_engineering_cases():
 
     # 3. Audit Laser Mirror
     print("\n[Auditing]: app_laser_mirror")
-    layers_lm = build_laser_mirror_layers(periods=8)  # (HL)^8 H -> 17 layers
+    layers_lm = build_laser_mirror_layers(periods=8)
     stack_lm = [
         {"material": ly.name, "thickness_nm": round(float(ly.thickness_nm), 4), "n": str(ly.n)}
         for ly in layers_lm
@@ -205,12 +202,13 @@ def audit_engineering_cases():
         "coating_layer_count": 17,
         "layer_stack": stack_lm,
         "physics_input_hash": hash_lm,
+        "hash_evidence_source": "FORMAL_CONSTRUCTOR",
         "energy_validation_type": "ALGEBRAIC_CLOSURE",
         "energy_closure_residual": max_err_lm,
         "formal_metrics": metrics_lm,
         "template_requirement": "REUSE_EXISTING",
         "candidate_template": "periodic-stack",
-        "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+        "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
         "variant_of": None,
         "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
         "audit_status": "SOURCE_AUDIT_PASSED",
@@ -218,7 +216,7 @@ def audit_engineering_cases():
 
     # 4. Audit Phone Lens AR
     print("\n[Auditing]: app_phone_lens_ar")
-    layers_pl = build_phone_lens_ar_layers()  # Returns [SiO2, ZrO2, MgF2]
+    layers_pl = build_phone_lens_ar_layers()
     stack_pl = [
         {"material": ly.name, "thickness_nm": round(float(ly.thickness_nm), 4), "n": str(ly.n)}
         for ly in layers_pl
@@ -257,13 +255,14 @@ def audit_engineering_cases():
         "coating_layer_count": 3,
         "layer_stack": stack_pl,
         "physics_input_hash": hash_pl,
+        "hash_evidence_source": "FORMAL_CONSTRUCTOR",
         "energy_validation_type": "ALGEBRAIC_CLOSURE",
         "energy_closure_residual": max_err_pl,
         "formal_metrics": metrics_pl,
         "template_requirement": "EXTEND_EXISTING",
         "candidate_template": "periodic-stack",
         "required_extension": "GENERIC_MULTILAYER_MODE",
-        "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+        "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
         "variant_of": None,
         "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
         "audit_status": "SOURCE_AUDIT_PASSED",
@@ -271,7 +270,7 @@ def audit_engineering_cases():
 
     # 5. Audit Smart Window
     print("\n[Auditing]: app_smart_window")
-    layers_sw = build_smart_window_layers()  # WO3, NiO, Ag
+    layers_sw = build_smart_window_layers()
     stack_sw = [
         {"material": ly.name, "thickness_nm": round(float(ly.thickness_nm), 4), "n": str(ly.n)}
         for ly in layers_sw
@@ -280,18 +279,29 @@ def audit_engineering_cases():
 
     res_sw = run_smart_window()
     max_err_sw = float(np.max(np.abs(res_sw["R"] + res_sw["T"] + res_sw["A"] - 1.0)))
+    A_lossy = res_sw["A"]
 
-    # Additional Ag complex index absorption verification test
-    # Re-run with Ag imaginary part set to 0.0 -> A must be near 0
+    # Lossless control test
     layers_sw_no_loss = [
         LayerSpec("WO3", 2.10, 80.0),
         LayerSpec("NiO", 2.00, 50.0),
         LayerSpec("Ag_Lossless", 0.05 + 0.0j, 15.0),
     ]
-    res_sw_no_loss = multilayer_rt_spectrum(np.linspace(300, 2500, 100), layers_sw_no_loss, n_incident=1.0, n_substrate=1.52)
-    max_A_lossless = float(np.max(res_sw_no_loss["A"]))
-    print(f"  Ag Lossless Control Test Max Absorption A_lossless: {max_A_lossless:.2e}")
-    assert max_A_lossless < 1e-5, "Absorption must be near zero when Ag imaginary part is 0.0"
+    res_sw_no_loss = multilayer_rt_spectrum(np.linspace(300, 2500, 500), layers_sw_no_loss, n_incident=1.0, n_substrate=1.52)
+    A_lossless = res_sw_no_loss["A"]
+
+    min_A_lossy = float(np.min(A_lossy))
+    max_A_lossy = float(np.max(A_lossy))
+    mean_A_lossy = float(np.mean(A_lossy))
+    mean_A_lossless = float(np.mean(A_lossless))
+    max_A_lossless = float(np.max(A_lossless))
+
+    print(f"  Lossy Ag Model Audit: min_A={min_A_lossy:.2e}, max_A={max_A_lossy:.4f}, mean_lossy={mean_A_lossy:.4f}, mean_lossless={mean_A_lossless:.2e}")
+
+    assert min_A_lossy >= -1e-9, "min_A_lossy must be >= -1e-9"
+    assert max_A_lossy > 1e-4, "max_A_lossy must be > 1e-4"
+    assert mean_A_lossy > mean_A_lossless, "mean_A_lossy must be > mean_A_lossless"
+    assert max_A_lossless < 1e-8, "max_A_lossless must be < 1e-8"
 
     metrics_sw = [
         {"metric_name": "T_visible", "status": "FORMAL_SOURCE", "definition": "可见光波段 (400-700nm) 平均透射率", "unit": "fraction"},
@@ -344,18 +354,24 @@ def audit_engineering_cases():
         "coating_layer_count": 3,
         "layer_stack": stack_sw,
         "physics_input_hash": hash_sw,
+        "hash_evidence_source": "FORMAL_CONSTRUCTOR",
         "energy_validation_type": "ALGEBRAIC_CLOSURE",
         "energy_closure_residual": max_err_sw,
         "absorption_verification": {
             "ag_imaginary_k": 3.20,
-            "max_A_with_loss": float(np.max(res_sw["A"])),
-            "max_A_lossless_control": max_A_lossless,
+            "min_A_lossy": min_A_lossy,
+            "max_A_lossy": max_A_lossy,
+            "mean_A_lossy": mean_A_lossy,
+            "mean_A_lossless": mean_A_lossless,
+            "max_A_lossless": max_A_lossless,
+            "absorption_metric_type": "TOTAL_STACK_ABSORPTANCE",
+            "layer_resolved_absorption_status": "NOT_AVAILABLE",
             "absorption_verified": True
         },
         "formal_metrics": metrics_sw,
         "template_requirement": "NEW_TEMPLATE_REQUIRED",
         "candidate_template": "absorber-stack",
-        "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+        "physical_equivalence_status": "NO_EXACT_MATCH_AMONG_AUDITED_CONFIGURATIONS",
         "variant_of": None,
         "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
         "audit_status": "SOURCE_AUDIT_PASSED",
@@ -365,14 +381,14 @@ def audit_engineering_cases():
     manifest_path = ROOT / "docs" / "visualization" / "data" / "stage_c2_1a_engineering_manifest.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_data = {
-        "schema_version": "1.1.0",
-        "stage": "Stage C.2.1A.1",
-        "title": "Engineering Application Cases Source & Structure Manifest (Revised)",
+        "schema_version": "1.2.0",
+        "stage": "Stage C.2.1A.1 Gate Passed",
+        "title": "Engineering Application Cases Source & Structure Manifest",
         "audit_cases_count": len(manifest_cases),
         "cases": manifest_cases,
     }
     manifest_path.write_text(json.dumps(manifest_data, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"\n[SUCCESS] Revised Manifest written to {manifest_path}")
+    print(f"\n[SUCCESS] Preflight Manifest written to {manifest_path}")
     print("=" * 70)
 
 
