@@ -1,7 +1,7 @@
 {
-  "schema_version": "1.0.0",
-  "stage": "Stage C.2.1A",
-  "title": "Engineering Application Cases Source Manifest",
+  "schema_version": "1.1.0",
+  "stage": "Stage C.2.1A.1",
+  "title": "Engineering Application Cases Source & Structure Manifest (Revised)",
   "audit_cases_count": 5,
   "cases": [
     {
@@ -11,23 +11,14 @@
       "source_file": "examples/applications/solar_cell_ar.py",
       "source_symbol": "run_solar_cell_ar",
       "formal_entrypoint": "examples.applications.solar_cell_ar:run_solar_cell_ar",
-      "default_parameters": {
-        "lambda0_nm": 550.0,
-        "wavelength_range_nm": [
-          300.0,
-          1100.0,
-          200
-        ],
-        "n_incident": 1.0,
-        "n_substrate": "3.5 + 0.0j",
-        "incidence_angle_deg": 0.0,
-        "polarization": "p"
-      },
+      "optical_propagation_order": "Air -> SiO2 -> TiO2 -> MgF2 -> Si",
+      "deposition_order_status": "NOT_DEFINED",
+      "coating_layer_count": 3,
       "layer_stack": [
         {
-          "material": "MgF2",
-          "thickness_nm": 99.6377,
-          "n": "1.38"
+          "material": "SiO2",
+          "thickness_nm": 94.1781,
+          "n": "1.46"
         },
         {
           "material": "TiO2",
@@ -35,14 +26,14 @@
           "n": "2.3"
         },
         {
-          "material": "SiO2",
-          "thickness_nm": 94.1781,
-          "n": "1.46"
+          "material": "MgF2",
+          "thickness_nm": 99.6377,
+          "n": "1.38"
         }
       ],
-      "physics_input_hash": "80fe4bb33515695d",
-      "material_model": "CONSTANT_COMPLEX_INDEX",
-      "external_dependencies": "NONE",
+      "physics_input_hash": "547a2616f74e634d",
+      "energy_validation_type": "ALGEBRAIC_CLOSURE",
+      "energy_closure_residual": 6.661338147750939e-16,
       "formal_metrics": [
         {
           "metric_name": "avg_R_300_1100nm",
@@ -69,20 +60,19 @@
           "unit": "fraction"
         },
         {
-          "metric_name": "efficiency_improvement_pct",
+          "metric_name": "optical_coupling_gain_estimate_pct",
+          "deprecated_metric_name": "efficiency_improvement_pct",
           "status": "DERIVED_FROM_FORMAL_OUTPUT",
-          "definition": "相对裸硅的光吸收改善估算百分比 ((1-avg_R)/(1-avg_R_bare)-1)",
-          "unit": "%"
+          "definition": "相对裸硅的光耦合吸收改善百分比 ((1-avg_R)/(1-avg_R_bare)-1)",
+          "unit": "%",
+          "boundary_note": "仅为反射率降低带来的光学增益估算，非太阳电池伏安特性/光电转换效率"
         }
       ],
-      "unavailable_metrics": [
-        "carrier_recombination_rate",
-        "electrical_conversion_efficiency_IV"
-      ],
-      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
-      "variant_of": "UNIQUE",
-      "template_requirement": "REUSE_EXISTING",
+      "template_requirement": "EXTEND_EXISTING",
       "candidate_template": "periodic-stack",
+      "required_extension": "GENERIC_MULTILAYER_MODE",
+      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+      "variant_of": null,
       "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
       "audit_status": "SOURCE_AUDIT_PASSED"
     },
@@ -93,110 +83,144 @@
       "source_file": "examples/applications/wdm_filter.py",
       "source_symbol": "run_wdm_filter",
       "formal_entrypoint": "examples.applications.wdm_filter:run_wdm_filter",
-      "default_parameters": {
-        "lambda0_nm": 1550.0,
-        "wavelength_range_nm": [
-          1500.0,
-          1600.0,
-          500
-        ],
-        "n_incident": 1.0,
-        "n_substrate": 1.46,
-        "periods": 4,
-        "spacer_kind": "L",
-        "incidence_angle_deg": 0.0,
-        "polarization": "p"
-      },
+      "optical_propagation_order": "Air -> (TiO2/SiO2)^4 -> 2L(SiO2 cavity) -> (SiO2/TiO2)^4 -> Glass",
+      "deposition_order_status": "NOT_DEFINED",
+      "left_mirror_layers": 8,
+      "cavity_layers": 1,
+      "right_mirror_layers": 8,
+      "coating_layer_count": 17,
       "layer_stack": [
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 168.4783,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 265.411,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 168.4783,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 265.411,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 168.4783,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 265.411,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 168.4783,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 265.411,
           "n": "1.46"
+        },
+        {
+          "material": "C",
+          "thickness_nm": 530.8219,
+          "n": "1.46"
+        },
+        {
+          "material": "L",
+          "thickness_nm": 265.411,
+          "n": "1.46"
+        },
+        {
+          "material": "H",
+          "thickness_nm": 168.4783,
+          "n": "2.3"
+        },
+        {
+          "material": "L",
+          "thickness_nm": 265.411,
+          "n": "1.46"
+        },
+        {
+          "material": "H",
+          "thickness_nm": 168.4783,
+          "n": "2.3"
+        },
+        {
+          "material": "L",
+          "thickness_nm": 265.411,
+          "n": "1.46"
+        },
+        {
+          "material": "H",
+          "thickness_nm": 168.4783,
+          "n": "2.3"
+        },
+        {
+          "material": "L",
+          "thickness_nm": 265.411,
+          "n": "1.46"
+        },
+        {
+          "material": "H",
+          "thickness_nm": 168.4783,
+          "n": "2.3"
         }
       ],
-      "physics_input_hash": "9c916c228ca666fa",
-      "material_model": "CONSTANT_REAL_INDEX",
-      "external_dependencies": "NONE",
+      "physics_input_hash": "cc4364e42f8c8c9f",
+      "energy_validation_type": "ALGEBRAIC_CLOSURE",
+      "energy_closure_residual": 2.7755575615628914e-15,
       "formal_metrics": [
         {
           "metric_name": "peak_transmittance",
           "status": "FORMAL_SOURCE",
-          "definition": "1550nm 中心波长峰值透射率",
+          "metric_validity_status": "PASSED",
+          "definition": "1550nm 中心透射峰值",
           "unit": "fraction"
-        },
-        {
-          "metric_name": "peak_wavelength_nm",
-          "status": "FORMAL_SOURCE",
-          "definition": "透射峰值波长",
-          "unit": "nm"
         },
         {
           "metric_name": "fwhm_nm",
           "status": "FORMAL_SOURCE",
+          "metric_validity_status": "PASSED",
           "definition": "半高全宽",
           "unit": "nm"
         },
         {
           "metric_name": "fsr_nm",
-          "status": "FORMAL_SOURCE",
-          "definition": "自由光谱范围 (FSR)",
-          "unit": "nm"
+          "status": "DERIVED_FROM_FORMAL_OUTPUT",
+          "metric_validity_status": "SCAN_RANGE_INSUFFICIENT",
+          "definition": "自由光谱范围（基于单腔理论拟合）",
+          "unit": "nm",
+          "boundary_note": "当前 1500-1600nm 扫描区间内仅有一个透射峰，无法由实际两峰差直接提取"
         },
         {
           "metric_name": "finesse",
           "status": "DERIVED_FROM_FORMAL_OUTPUT",
-          "definition": "精细度 F = FSR / FWHM",
+          "metric_validity_status": "NOT_AVAILABLE",
+          "definition": "精细度",
           "unit": "dimensionless"
         },
         {
           "metric_name": "isolation_dB",
           "status": "FORMAL_SOURCE",
+          "metric_validity_status": "PASSED",
           "definition": "信道隔离度 (-10 log10 T_off_peak)",
           "unit": "dB"
         }
       ],
-      "unavailable_metrics": [
-        "multi_channel_crosstalk_matrix"
-      ],
-      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
-      "variant_of": "UNIQUE",
       "template_requirement": "REUSE_EXISTING",
       "candidate_template": "defect-cavity",
+      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+      "variant_of": null,
       "dynamic_wave_mode": "FORWARD_BACKWARD_WAVE_ILLUSTRATION",
       "audit_status": "SOURCE_AUDIT_PASSED"
     },
@@ -207,104 +231,101 @@
       "source_file": "examples/applications/laser_mirror.py",
       "source_symbol": "run_laser_mirror",
       "formal_entrypoint": "examples.applications.laser_mirror:run_laser_mirror",
-      "default_parameters": {
-        "lambda0_nm": 1064.0,
-        "wavelength_range_nm": [
-          900.0,
-          1200.0,
-          300
-        ],
-        "n_incident": 1.0,
-        "n_substrate": 1.46,
-        "periods": 8,
-        "incidence_angle_deg": 0.0,
-        "polarization": "p"
-      },
+      "optical_propagation_order": "Air -> (TiO2/SiO2)^8 H -> Glass",
+      "deposition_order_status": "NOT_DEFINED",
+      "complete_HL_periods": 8,
+      "terminal_layer": "H",
+      "coating_layer_count": 17,
       "layer_stack": [
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 115.6522,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 182.1918,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 115.6522,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 182.1918,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 115.6522,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 182.1918,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 115.6522,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 182.1918,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 115.6522,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 182.1918,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 115.6522,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 182.1918,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 115.6522,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 182.1918,
           "n": "1.46"
         },
         {
-          "material": "TiO2",
+          "material": "H",
           "thickness_nm": 115.6522,
           "n": "2.3"
         },
         {
-          "material": "SiO2",
+          "material": "L",
           "thickness_nm": 182.1918,
           "n": "1.46"
+        },
+        {
+          "material": "H",
+          "thickness_nm": 115.6522,
+          "n": "2.3"
         }
       ],
-      "physics_input_hash": "de5ec15fa2aefd57",
-      "material_model": "CONSTANT_REAL_INDEX",
-      "external_dependencies": "NONE",
+      "physics_input_hash": "f83dab6828173052",
+      "energy_validation_type": "ALGEBRAIC_CLOSURE",
+      "energy_closure_residual": 3.1086244689504383e-15,
       "formal_metrics": [
         {
           "metric_name": "peak_reflectance",
@@ -321,24 +342,20 @@
         {
           "metric_name": "stopband_width_nm",
           "status": "FORMAL_SOURCE",
-          "definition": "高反射禁带宽度 (R > 99%)",
+          "definition": "高反射带宽度 (R > 99%)",
           "unit": "nm"
         },
         {
           "metric_name": "index_ratio",
           "status": "FORMAL_SOURCE",
-          "definition": "高低折射率对比度 nH/nL",
+          "definition": "折射率对比度 nH/nL",
           "unit": "ratio"
         }
       ],
-      "unavailable_metrics": [
-        "laser_damage_threshold_LIDT",
-        "thermal_stress_distribution"
-      ],
-      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
-      "variant_of": "UNIQUE",
       "template_requirement": "REUSE_EXISTING",
       "candidate_template": "periodic-stack",
+      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+      "variant_of": null,
       "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
       "audit_status": "SOURCE_AUDIT_PASSED"
     },
@@ -349,23 +366,14 @@
       "source_file": "examples/applications/phone_lens_ar.py",
       "source_symbol": "run_phone_lens_ar",
       "formal_entrypoint": "examples.applications.phone_lens_ar:run_phone_lens_ar",
-      "default_parameters": {
-        "lambda0_nm": 550.0,
-        "wavelength_range_nm": [
-          380.0,
-          780.0,
-          200
-        ],
-        "n_incident": 1.0,
-        "n_substrate": 1.8,
-        "incidence_angle_deg": 0.0,
-        "polarization": "p"
-      },
+      "optical_propagation_order": "Air -> SiO2 -> ZrO2 -> MgF2 -> LaSFN9 Glass",
+      "deposition_order_status": "NOT_DEFINED",
+      "coating_layer_count": 3,
       "layer_stack": [
         {
-          "material": "MgF2",
-          "thickness_nm": 99.6377,
-          "n": "1.38"
+          "material": "SiO2",
+          "thickness_nm": 94.1781,
+          "n": "1.46"
         },
         {
           "material": "ZrO2",
@@ -373,14 +381,14 @@
           "n": "2.1"
         },
         {
-          "material": "SiO2",
-          "thickness_nm": 94.1781,
-          "n": "1.46"
+          "material": "MgF2",
+          "thickness_nm": 99.6377,
+          "n": "1.38"
         }
       ],
-      "physics_input_hash": "1f46a9e793960f8a",
-      "material_model": "CONSTANT_REAL_INDEX",
-      "external_dependencies": "NONE",
+      "physics_input_hash": "b58fbf8d4dbda27f",
+      "energy_validation_type": "ALGEBRAIC_CLOSURE",
+      "energy_closure_residual": 7.771561172376096e-16,
       "formal_metrics": [
         {
           "metric_name": "avg_R_visible",
@@ -391,13 +399,13 @@
         {
           "metric_name": "avg_R_single_layer",
           "status": "FORMAL_SOURCE",
-          "definition": "单层 MgF2 减反膜平均反射率对比",
+          "definition": "单层 MgF2 对比平均反射率",
           "unit": "fraction"
         },
         {
           "metric_name": "R_improvement_vs_single",
           "status": "DERIVED_FROM_FORMAL_OUTPUT",
-          "definition": "相对单层减反改善比例",
+          "definition": "相对单层 AR 改善百分比",
           "unit": "%"
         },
         {
@@ -419,20 +427,19 @@
           "unit": "fraction"
         },
         {
-          "metric_name": "color_uniformity",
+          "metric_name": "HEURISTIC_COLOR_FLATNESS_SCORE",
+          "deprecated_metric_name": "color_uniformity",
           "status": "DERIVED_FROM_FORMAL_OUTPUT",
-          "definition": "颜色均匀度 (1 - maxDiff(RGB))",
-          "unit": "score"
+          "definition": "三点 (RGB) 反射率平坦度启发式评分 1 - (max - min)",
+          "unit": "score",
+          "boundary_note": "仅为 450/550/650nm 采样点平坦度评分，非国际标准 CIE 色差/色温评估"
         }
       ],
-      "unavailable_metrics": [
-        "curved_lens_ray_tracing",
-        "ghost_image_stray_light_simulation"
-      ],
-      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
-      "variant_of": "UNIQUE",
-      "template_requirement": "REUSE_EXISTING",
+      "template_requirement": "EXTEND_EXISTING",
       "candidate_template": "periodic-stack",
+      "required_extension": "GENERIC_MULTILAYER_MODE",
+      "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
+      "variant_of": null,
       "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
       "audit_status": "SOURCE_AUDIT_PASSED"
     },
@@ -443,17 +450,9 @@
       "source_file": "examples/applications/smart_window.py",
       "source_symbol": "run_smart_window",
       "formal_entrypoint": "examples.applications.smart_window:run_smart_window",
-      "default_parameters": {
-        "wavelength_range_nm": [
-          300.0,
-          2500.0,
-          500
-        ],
-        "n_incident": 1.0,
-        "n_substrate": 1.52,
-        "incidence_angle_deg": 0.0,
-        "polarization": "p"
-      },
+      "optical_propagation_order": "Air -> WO3 -> NiO -> Ag -> Glass",
+      "deposition_order_status": "NOT_DEFINED",
+      "coating_layer_count": 3,
       "layer_stack": [
         {
           "material": "WO3",
@@ -468,12 +467,18 @@
         {
           "material": "Ag",
           "thickness_nm": 15.0,
-          "n": "0.05+3.20j"
+          "n": "(0.05+3.2j)"
         }
       ],
-      "physics_input_hash": "1c1084bad123ae7b",
-      "material_model": "CONSTANT_COMPLEX_INDEX",
-      "external_dependencies": "NONE",
+      "physics_input_hash": "0223f508f0273bf4",
+      "energy_validation_type": "ALGEBRAIC_CLOSURE",
+      "energy_closure_residual": 1.1102230246251565e-16,
+      "absorption_verification": {
+        "ag_imaginary_k": 3.2,
+        "max_A_with_loss": 0.04556541897505728,
+        "max_A_lossless_control": 0.0,
+        "absorption_verified": true
+      },
       "formal_metrics": [
         {
           "metric_name": "T_visible",
@@ -495,21 +500,35 @@
         },
         {
           "metric_name": "T_solar_weighted",
+          "weighting_model": "ANALYTIC_GAUSSIAN_SOLAR_PROXY",
           "status": "DERIVED_FROM_FORMAL_OUTPUT",
-          "definition": "高斯拟合太阳光谱加权透射率",
-          "unit": "fraction"
+          "definition": "500nm 峰值高斯拟合太阳辐射加权透射率",
+          "unit": "fraction",
+          "boundary_note": "解析高斯加权，非 ASTM G173 标准太阳光谱积分"
         },
         {
           "metric_name": "R_solar_weighted",
+          "weighting_model": "ANALYTIC_GAUSSIAN_SOLAR_PROXY",
           "status": "DERIVED_FROM_FORMAL_OUTPUT",
-          "definition": "高斯拟合太阳光谱加权反射率",
-          "unit": "fraction"
+          "definition": "500nm 峰值高斯拟合太阳辐射加权反射率",
+          "unit": "fraction",
+          "boundary_note": "解析高斯加权"
         },
         {
-          "metric_name": "SHGC",
+          "metric_name": "SHGC_PROXY",
+          "deprecated_metric_name": "SHGC",
           "status": "DERIVED_FROM_FORMAL_OUTPUT",
-          "definition": "估算太阳得热系数 (T_solar + 0.5 * A_solar)",
-          "unit": "ratio"
+          "definition": "太阳得热系数简化估计 T_solar + 0.5 * A_solar",
+          "unit": "ratio",
+          "boundary_note": "基于高斯加权的估计值，非建筑能效标准 SHGC 认证值"
+        },
+        {
+          "metric_name": "visible_transmittance_proxy",
+          "deprecated_metric_name": "luminous_efficacy",
+          "status": "DERIVED_FROM_FORMAL_OUTPUT",
+          "definition": "可见光透射率估计",
+          "unit": "fraction",
+          "boundary_note": "非 CIE 人眼光视效率加权 (lm/W)"
         },
         {
           "metric_name": "NIR_rejection_ratio",
@@ -518,14 +537,10 @@
           "unit": "ratio"
         }
       ],
-      "unavailable_metrics": [
-        "astm_g173_full_spectrum_weighted_VLT",
-        "building_energy_saving_rate"
-      ],
+      "template_requirement": "NEW_TEMPLATE_REQUIRED",
+      "candidate_template": "absorber-stack",
       "physical_equivalence_status": "UNIQUE_PHYSICAL_CONFIGURATION",
-      "variant_of": "UNIQUE",
-      "template_requirement": "REUSE_EXISTING",
-      "candidate_template": "metal-dbr-interface",
+      "variant_of": null,
       "dynamic_wave_mode": "FORWARD_RAY_PROPAGATION",
       "audit_status": "SOURCE_AUDIT_PASSED"
     }
