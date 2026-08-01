@@ -9,7 +9,8 @@ export class DefectCavityTemplate {
     this.waveRenderer = new SineWaveRenderer();
     this.group.add(this.waveRenderer.getGroup());
     
-    // Explicit teaching semantics downgrade
+    // Explicit teaching semantics downgrade & template mode
+    this.templateMode = "DEFECT_CAVITY_MODE";
     this.animationSemantics = "STANDING_WAVE_ILLUSTRATION";
     this.fieldAmplitudeSource = "VISUAL_EQUAL_AMPLITUDE";
     this.quantitativeFieldStatus = "NOT_AVAILABLE";

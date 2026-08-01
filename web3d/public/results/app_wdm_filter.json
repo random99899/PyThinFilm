@@ -2,9 +2,26 @@
   "schema_version": "1.0.0",
   "case_id": "app_wdm_filter",
   "title": "WDM 通信滤光片",
-  "export_time": "2026-08-01T07:02:46.103210+00:00",
-  "git_commit": "833fdecbe849dcc7b4daa1cc4cb5fe32114363a9",
+  "export_time": "2026-08-01T07:08:20.620827+00:00",
+  "git_commit": "a8f58453392719158b23225a4587b3366c5e071d",
   "visualization_template": "defect-cavity",
+  "template_mode": "DEFECT_CAVITY_MODE",
+  "run_default_parameters": {
+    "lambda0_nm": 1550.0,
+    "nH": 2.3,
+    "nL": 1.46,
+    "periods": 4,
+    "spacer_kind": "L"
+  },
+  "builder_parameters": {
+    "lambda0_nm": 1550.0,
+    "nH": 2.3,
+    "nL": 1.46,
+    "periods": 4,
+    "spacer_kind": "L"
+  },
+  "run_builder_parameter_match": true,
+  "layer_stack_hash": "70750fa83302b73f",
   "ambient": {
     "name": "Air",
     "n": 1.0
@@ -3625,7 +3642,12 @@
     "fwhm_nm": 11.823647294589136,
     "fsr_nm": 530.8219178082192,
     "finesse": 44.89493847225463,
+    "off_peak_transmission": 0.030381008845441967,
+    "off_peak_transmission_dB": -15.173978088559188,
     "isolation_dB": 15.173978088559188,
+    "isolation_definition": "-10*log10(T_off_peak)",
+    "off_peak_definition": "10*log10(T_off_peak)",
+    "epsilon_floor": 1e-10,
     "num_dbr_periods": 4
   },
   "physics": {
@@ -3635,5 +3657,5 @@
   "animation_semantics": "STANDING_WAVE_ILLUSTRATION",
   "physics_input_hash": "1f9a2201171847f0",
   "physics_result_hash": "d90ab925ff63bd45",
-  "result_hash": "427c37bb2a2cf89e"
+  "result_hash": "4fbc8f84115fe9f1"
 }

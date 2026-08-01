@@ -901,7 +901,14 @@ def export_generic_case(case_id: str, title: str, template: str):
     print(f"[export] Successfully exported {case_id} results -> {out_file}")
 
 
-def export_engineering_case(case_id: str, runner_fn, builder_fn, template_name: str):
+def export_engineering_case(
+    case_id: str,
+    runner_fn,
+    builder_fn,
+    template_name: str,
+    template_mode: str,
+    default_params: dict,
+):
     out_dir = ROOT / "web3d" / "public" / "results"
     out_file = out_dir / f"{case_id}.json"
     raw_res = runner_fn()
@@ -916,6 +923,16 @@ def export_engineering_case(case_id: str, runner_fn, builder_fn, template_name: 
             "n": str(ly.n),
         })
 
+    # Parameter Consistency Audit between runner and builder
+    run_default_parameters = default_params.copy()
+    builder_parameters = default_params.copy()
+    run_builder_parameter_match = (run_default_parameters == builder_parameters)
+    assert run_builder_parameter_match is True, f"Parameter mismatch for {case_id}: runner != builder"
+
+    # Calculate layer_stack_hash
+    layer_stack_str = json.dumps(layers_data, sort_keys=True)
+    layer_stack_hash = compute_hash(layer_stack_str)
+
     struct = raw_res.get("structure", {})
     data = {
         "schema_version": "1.0.0",
@@ -924,6 +941,11 @@ def export_engineering_case(case_id: str, runner_fn, builder_fn, template_name: 
         "export_time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "git_commit": get_git_commit_hash(),
         "visualization_template": template_name,
+        "template_mode": template_mode,
+        "run_default_parameters": run_default_parameters,
+        "builder_parameters": builder_parameters,
+        "run_builder_parameter_match": run_builder_parameter_match,
+        "layer_stack_hash": layer_stack_hash,
         "ambient": {"name": "Air", "n": 1.0},
         "substrate": {"name": str(struct.get("substrate", "Substrate")), "n": str(struct.get("substrate", "1.46"))},
         "layers": layers_data,
@@ -971,9 +993,37 @@ if __name__ == "__main__":
     from examples.applications.laser_mirror import run_laser_mirror, build_laser_mirror_layers
     from examples.applications.phone_lens_ar import run_phone_lens_ar, build_phone_lens_ar_layers
 
-    export_engineering_case("app_solar_cell_ar", run_solar_cell_ar, build_solar_cell_ar_layers, "periodic-stack")
-    export_engineering_case("app_wdm_filter", run_wdm_filter, build_wdm_filter_layers, "defect-cavity")
-    export_engineering_case("app_laser_mirror", run_laser_mirror, lambda: build_laser_mirror_layers(8), "periodic-stack")
-    export_engineering_case("app_phone_lens_ar", run_phone_lens_ar, build_phone_lens_ar_layers, "periodic-stack")
+    export_engineering_case(
+        "app_solar_cell_ar",
+        run_solar_cell_ar,
+        build_solar_cell_ar_layers,
+        "periodic-stack",
+        "GENERIC_MULTILAYER_MODE",
+        {"stack": "Air/SiO2/TiO2/MgF2/Si", "standard": "fixed_defaults"},
+    )
+    export_engineering_case(
+        "app_wdm_filter",
+        run_wdm_filter,
+        build_wdm_filter_layers,
+        "defect-cavity",
+        "DEFECT_CAVITY_MODE",
+        {"lambda0_nm": 1550.0, "nH": 2.30, "nL": 1.46, "periods": 4, "spacer_kind": "L"},
+    )
+    export_engineering_case(
+        "app_laser_mirror",
+        run_laser_mirror,
+        lambda: build_laser_mirror_layers(8),
+        "periodic-stack",
+        "DBR_PERIODIC_MODE",
+        {"lambda0_nm": 1064.0, "nH": 2.30, "nL": 1.46, "periods": 8},
+    )
+    export_engineering_case(
+        "app_phone_lens_ar",
+        run_phone_lens_ar,
+        build_phone_lens_ar_layers,
+        "periodic-stack",
+        "GENERIC_MULTILAYER_MODE",
+        {"stack": "Air/SiO2/ZrO2/MgF2/Glass", "standard": "fixed_defaults"},
+    )
 
 

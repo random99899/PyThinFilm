@@ -34,8 +34,16 @@ class TestStageC2EngineeringMetrics:
         assert "peak_transmittance" in metrics
         assert "fwhm_nm" in metrics
         assert "isolation_dB" in metrics
+        assert "off_peak_transmission_dB" in metrics
         assert metrics["peak_transmittance"] > 0.85
         assert metrics["fwhm_nm"] > 0.0
+
+        # Sign & Definition assertions
+        iso_db = metrics["isolation_dB"]
+        off_peak_db = metrics["off_peak_transmission_dB"]
+        assert iso_db >= 0.0, f"isolation_dB must be non-negative, got {iso_db}"
+        assert off_peak_db <= 0.0, f"off_peak_transmission_dB must be non-positive, got {off_peak_db}"
+        assert abs(iso_db + off_peak_db) < 1e-5, f"Expected isolation_dB + off_peak_transmission_dB == 0, got sum {iso_db + off_peak_db}"
 
     def test_laser_mirror_metrics(self):
         data = json.loads((PUBLIC_RESULTS / "app_laser_mirror.json").read_text(encoding="utf-8"))

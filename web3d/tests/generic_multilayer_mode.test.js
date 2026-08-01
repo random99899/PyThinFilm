@@ -10,28 +10,44 @@ function loadJson(name) {
   return JSON.parse(readFileSync(p, "utf-8"));
 }
 
-describe("PeriodicStackTemplate GENERIC_MULTILAYER_MODE Tests", () => {
-  it("enables GENERIC_MULTILAYER_MODE for app_solar_cell_ar (3 distinct materials)", () => {
+describe("PeriodicStackTemplate GENERIC_MULTILAYER_MODE & Dynamic Wave Semantics Tests", () => {
+  it("validates app_solar_cell_ar GENERIC_MULTILAYER_MODE flags", () => {
     const data = loadJson("app_solar_cell_ar");
     const template = new PeriodicStackTemplate(null);
     template.build(data, { polarization: "TE" });
 
+    expect(template.templateMode).toBe("GENERIC_MULTILAYER_MODE");
     expect(template.isGenericMultilayerMode).toBe(true);
+    expect(template.showDbrStopband).toBe(false);
+    expect(template.showPeriodCount).toBe(false);
+    expect(template.showRepresentativeInternalDbrWaves).toBe(false);
+    expect(template.waveAmplitudeSource).toBe("R_T_SCHEMATIC");
+    expect(template.animationSemantics).toBe("TEACHING_ILLUSTRATION");
   });
 
-  it("enables GENERIC_MULTILAYER_MODE for app_phone_lens_ar (SiO2, ZrO2, MgF2)", () => {
+  it("validates app_phone_lens_ar GENERIC_MULTILAYER_MODE flags", () => {
     const data = loadJson("app_phone_lens_ar");
     const template = new PeriodicStackTemplate(null);
     template.build(data, { polarization: "TM" });
 
+    expect(template.templateMode).toBe("GENERIC_MULTILAYER_MODE");
     expect(template.isGenericMultilayerMode).toBe(true);
+    expect(template.showDbrStopband).toBe(false);
+    expect(template.showPeriodCount).toBe(false);
+    expect(template.showRepresentativeInternalDbrWaves).toBe(false);
+    expect(template.waveAmplitudeSource).toBe("R_T_SCHEMATIC");
+    expect(template.animationSemantics).toBe("TEACHING_ILLUSTRATION");
   });
 
-  it("remains in periodic DBR mode for high_reflector (HL alternating)", () => {
-    const data = loadJson("high_reflector");
+  it("remains in DBR_PERIODIC_MODE for high_reflector and laser mirror", () => {
+    const data = loadJson("app_laser_mirror");
     const template = new PeriodicStackTemplate(null);
     template.build(data, { polarization: "TE" });
 
+    expect(template.templateMode).toBe("DBR_PERIODIC_MODE");
     expect(template.isGenericMultilayerMode).toBe(false);
+    expect(template.showDbrStopband).toBe(true);
+    expect(template.showPeriodCount).toBe(true);
+    expect(template.waveAmplitudeSource).toBe("DBR_DEFAULT");
   });
 });

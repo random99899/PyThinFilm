@@ -2,9 +2,24 @@
   "schema_version": "1.0.0",
   "case_id": "app_laser_mirror",
   "title": "激光高反镜 / DBR",
-  "export_time": "2026-08-01T07:02:46.170113+00:00",
-  "git_commit": "833fdecbe849dcc7b4daa1cc4cb5fe32114363a9",
+  "export_time": "2026-08-01T07:08:20.646504+00:00",
+  "git_commit": "a8f58453392719158b23225a4587b3366c5e071d",
   "visualization_template": "periodic-stack",
+  "template_mode": "DBR_PERIODIC_MODE",
+  "run_default_parameters": {
+    "lambda0_nm": 1064.0,
+    "nH": 2.3,
+    "nL": 1.46,
+    "periods": 8
+  },
+  "builder_parameters": {
+    "lambda0_nm": 1064.0,
+    "nH": 2.3,
+    "nL": 1.46,
+    "periods": 8
+  },
+  "run_builder_parameter_match": true,
+  "layer_stack_hash": "859ed92d602ce758",
   "ambient": {
     "name": "Air",
     "n": 1.0
@@ -2251,5 +2266,5 @@
   "animation_semantics": "TEACHING_ILLUSTRATION",
   "physics_input_hash": "e62dca8b0b02bb39",
   "physics_result_hash": "7d04c16d6663cfb1",
-  "result_hash": "15556eba50ee94b6"
+  "result_hash": "6ab54cea0dd301ef"
 }

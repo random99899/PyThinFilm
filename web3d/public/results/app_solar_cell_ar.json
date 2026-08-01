@@ -2,9 +2,20 @@
   "schema_version": "1.0.0",
   "case_id": "app_solar_cell_ar",
   "title": "太阳能电池减反膜",
-  "export_time": "2026-08-01T07:02:46.029905+00:00",
-  "git_commit": "833fdecbe849dcc7b4daa1cc4cb5fe32114363a9",
+  "export_time": "2026-08-01T07:08:20.595385+00:00",
+  "git_commit": "a8f58453392719158b23225a4587b3366c5e071d",
   "visualization_template": "periodic-stack",
+  "template_mode": "GENERIC_MULTILAYER_MODE",
+  "run_default_parameters": {
+    "stack": "Air/SiO2/TiO2/MgF2/Si",
+    "standard": "fixed_defaults"
+  },
+  "builder_parameters": {
+    "stack": "Air/SiO2/TiO2/MgF2/Si",
+    "standard": "fixed_defaults"
+  },
+  "run_builder_parameter_match": true,
+  "layer_stack_hash": "8fc7ee10139f02a1",
   "ambient": {
     "name": "Air",
     "n": 1.0
@@ -1466,5 +1477,5 @@
   "animation_semantics": "TEACHING_ILLUSTRATION",
   "physics_input_hash": "40121bbe897e5507",
   "physics_result_hash": "9aa3f4aa6dec206d",
-  "result_hash": "bcf67345ada2e2bb"
+  "result_hash": "033eaedd4a09f22f"
 }

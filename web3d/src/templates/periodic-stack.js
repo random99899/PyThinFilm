@@ -17,7 +17,15 @@ export class PeriodicStackTemplate {
     this.group.name = "PeriodicStackTemplateGroup";
     this.waveRenderer = new SineWaveRenderer();
     this.group.add(this.waveRenderer.getGroup());
+    
+    // Explicit Mode Flags
+    this.templateMode = "DBR_PERIODIC_MODE";
     this.isGenericMultilayerMode = false;
+    this.showDbrStopband = true;
+    this.showPeriodCount = true;
+    this.showRepresentativeInternalDbrWaves = true;
+    this.waveAmplitudeSource = "DBR_DEFAULT";
+    this.animationSemantics = "STANDING_WAVE_ILLUSTRATION";
   }
 
   getMaterialColor(matName, isH) {
@@ -40,10 +48,33 @@ export class PeriodicStackTemplate {
       { layer_index: 3, type: "H", name: "TiO2", n: 2.15, thickness_nm: 63.95 },
     ];
 
-    // Detect if case requires Generic Multilayer Mode
-    const uniqueMatNames = new Set(layersData.map((l) => l.name || l.type).filter(Boolean));
-    const hasPeriodicHL = layersData.every((l) => l.type === "H" || l.type === "L");
-    this.isGenericMultilayerMode = uniqueMatNames.size > 2 || !hasPeriodicHL;
+    // Priority 1: Explicit template_mode from JSON or registry
+    if (caseResult && caseResult.template_mode) {
+      this.templateMode = caseResult.template_mode;
+    } else {
+      // Fallback 2: Automated heuristic detection
+      const uniqueMatNames = new Set(layersData.map((l) => l.name || l.type).filter(Boolean));
+      const hasPeriodicHL = layersData.every((l) => l.type === "H" || l.type === "L");
+      this.templateMode = (uniqueMatNames.size > 2 || !hasPeriodicHL)
+        ? "GENERIC_MULTILAYER_MODE"
+        : "DBR_PERIODIC_MODE";
+    }
+
+    this.isGenericMultilayerMode = (this.templateMode === "GENERIC_MULTILAYER_MODE");
+
+    if (this.isGenericMultilayerMode) {
+      this.showDbrStopband = false;
+      this.showPeriodCount = false;
+      this.showRepresentativeInternalDbrWaves = false;
+      this.waveAmplitudeSource = "R_T_SCHEMATIC";
+      this.animationSemantics = "TEACHING_ILLUSTRATION";
+    } else {
+      this.showDbrStopband = true;
+      this.showPeriodCount = true;
+      this.showRepresentativeInternalDbrWaves = true;
+      this.waveAmplitudeSource = "DBR_DEFAULT";
+      this.animationSemantics = "STANDING_WAVE_ILLUSTRATION";
+    }
 
     let currentY = 0;
     const width = 6;
@@ -84,6 +115,19 @@ export class PeriodicStackTemplate {
     subMesh.position.y = currentY - 0.5;
     this.group.add(subMesh);
 
+    // Dynamic wave amplitudes based on case R/T spectrum if in GENERIC_MULTILAYER_MODE
+    let rAmp = 0.23;
+    let tAmp = 0.05;
+    if (this.isGenericMultilayerMode && caseResult && caseResult[polarization]) {
+      const rArr = caseResult[polarization].R || [];
+      const tArr = caseResult[polarization].T || [];
+      const meanR = rArr.length > 0 ? (rArr.reduce((a, b) => a + b, 0) / rArr.length) : 0.2;
+      const meanT = tArr.length > 0 ? (tArr.reduce((a, b) => a + b, 0) / tArr.length) : 0.8;
+      
+      rAmp = Math.max(0.04, Math.min(0.28, meanR * 0.30));
+      tAmp = Math.max(0.04, Math.min(0.28, meanT * 0.30));
+    }
+
     // Rays & Waves
     const angleRad = (45 * Math.PI) / 180;
     const incStart = [-4 * Math.sin(angleRad), 4 * Math.cos(angleRad), 0];
@@ -107,7 +151,7 @@ export class PeriodicStackTemplate {
         id: "reflected_wave",
         start: origin,
         end: refEnd,
-        amplitude: 0.23,
+        amplitude: rAmp,
         wavelength: 0.8,
         speed: 2.0,
         travelDir: 1,
@@ -118,7 +162,7 @@ export class PeriodicStackTemplate {
         id: "transmitted_wave",
         start: origin,
         end: transEnd,
-        amplitude: 0.05,
+        amplitude: tAmp,
         wavelength: 0.6,
         speed: 2.0,
         travelDir: 1,
