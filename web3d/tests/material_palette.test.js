@@ -24,9 +24,11 @@ describe("Stage C.V1A material palette", () => {
     expect(getMaterialAppearance("Ag").metalness).toBeGreaterThan(0);
   });
 
-  it("maps engineering H/L/C aliases to stable physical material colors", () => {
-    expect(getMaterialAppearance("H").color).toBe(getMaterialAppearance("TiO2").color);
-    expect(getMaterialAppearance("L").color).toBe(getMaterialAppearance("SiO2").color);
-    expect(getMaterialAppearance("C").color).toBe(getMaterialAppearance("SiO2").color);
+  it("keeps abstract H/L/C/QW roles stable without claiming a physical material", () => {
+    for (const role of ["H", "L", "C", "QW"]) {
+      expect(getMaterialAppearance(role)).toEqual(getMaterialAppearance(role));
+      expect(getMaterialAppearance(role).materialName).toBe(role);
+      expect(getMaterialAppearance(role).metalness).toBe(0);
+    }
   });
 });

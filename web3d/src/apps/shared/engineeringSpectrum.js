@@ -42,6 +42,10 @@ function extremumWavelength(caseResult, polarization, key, direction) {
 
 export function resolvePresetWavelength(caseResult, polarization, preset) {
   if (Number.isFinite(preset.wavelengthNm)) return Number(preset.wavelengthNm);
+  if (Array.isArray(preset.path)) {
+    const value = preset.path.reduce((current, segment) => current?.[segment === "$POL" ? polarization : segment], caseResult);
+    if (Number.isFinite(Number(value))) return Number(value);
+  }
   if (preset.metric && Number.isFinite(Number(caseResult.metrics?.[preset.metric]))) {
     return Number(caseResult.metrics[preset.metric]);
   }

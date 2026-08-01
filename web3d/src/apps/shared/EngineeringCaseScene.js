@@ -16,6 +16,10 @@ function cleanMaterialName(name) {
   return String(name || "Substrate").replace(/\s*\(.*\)\s*$/, "");
 }
 
+function layerMaterialName(layer) {
+  return String(layer.name || layer.type || `Layer-${layer.layer_index || "?"}`);
+}
+
 export class EngineeringCaseScene {
   constructor({ config, container, camera, domElement, onLayerFocus, onWaveInfo }) {
     this.config = config;
@@ -57,15 +61,16 @@ export class EngineeringCaseScene {
     layers.forEach((layer, index) => {
       const visualThickness = mapThicknessNm(layer.thickness_nm);
       const geometry = new THREE.BoxGeometry(width, visualThickness, depth);
-      const appearance = createLayerAppearance(layer.name, { themeId: "ACADEMIC_LIGHT", opacity: 0.9 });
+      const materialName = layerMaterialName(layer);
+      const appearance = createLayerAppearance(materialName, { themeId: "ACADEMIC_LIGHT", opacity: 0.9 });
       const mesh = new THREE.Mesh(geometry, appearance.material);
-      mesh.name = `${this.config.slug}_layer_${index + 1}_${layer.name}`;
+      mesh.name = `${this.config.slug}_layer_${index + 1}_${materialName}`;
       mesh.position.y = currentY - visualThickness / 2;
       mesh.userData = {
         isInteractiveLayer: true,
         layerIndex: index,
         layerNumber: index + 1,
-        materialName: layer.name,
+        materialName,
         thicknessNm: Number(layer.thickness_nm),
       };
       mesh.add(createLayerOutline(geometry, appearance.outlineColor));

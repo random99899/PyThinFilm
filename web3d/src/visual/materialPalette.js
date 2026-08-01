@@ -10,6 +10,10 @@ const MATERIALS = Object.freeze({
   Si: Object.freeze({ color: 0x7d8994, roughness: 0.82, metalness: 0 }),
   Ag: Object.freeze({ color: 0xaab0b5, roughness: 0.4, metalness: 0.72 }),
   Au: Object.freeze({ color: 0xb8a77f, roughness: 0.42, metalness: 0.68 }),
+  H: Object.freeze({ color: 0xc8b79f, roughness: 0.68, metalness: 0 }),
+  L: Object.freeze({ color: 0xb9ced8, roughness: 0.72, metalness: 0 }),
+  C: Object.freeze({ color: 0xb8cbbd, roughness: 0.72, metalness: 0 }),
+  QW: Object.freeze({ color: 0xb8cbbd, roughness: 0.74, metalness: 0 }),
 });
 
 function normalizeMaterialName(materialName) {
@@ -19,9 +23,6 @@ function normalizeMaterialName(materialName) {
     titania: "TiO2",
     silicon: "Si",
     substrate: "Substrate",
-    h: "TiO2",
-    l: "SiO2",
-    c: "SiO2",
   };
   return aliases[raw.toLowerCase()] || raw;
 }

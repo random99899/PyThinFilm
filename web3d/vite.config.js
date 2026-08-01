@@ -3,6 +3,11 @@ import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const additionalCaseSlugs = [
+  "quarter-wave-single-layer", "half-wave-single-layer", "single-ar",
+  "high-reflector", "quarter-wave-stack", "bragg-reflector",
+  "fp-single-halfwave", "fp-filter", "narrowband-filter", "tamm-phase-bundle",
+];
 
 export default defineConfig({
   root: "./",
@@ -19,6 +24,7 @@ export default defineConfig({
         wdmFilter: resolve(__dirname, "apps/wdm-filter/index.html"),
         laserMirror: resolve(__dirname, "apps/laser-mirror/index.html"),
         phoneLensAr: resolve(__dirname, "apps/phone-lens-ar/index.html"),
+        ...Object.fromEntries(additionalCaseSlugs.map((slug) => [slug, resolve(__dirname, `apps/${slug}/index.html`)])),
       },
     },
   },

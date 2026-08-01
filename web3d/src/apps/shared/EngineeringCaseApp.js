@@ -63,7 +63,7 @@ export class EngineeringCaseApp {
     this.root.querySelector("#layer-list").innerHTML = this.caseResult.layers.map((layer, index) => `
       <div class="layer-row" data-layer-index="${index}">
         <span class="layer-number">${index + 1}</span>
-        <strong>${layer.name}</strong>
+        <strong>${layer.name || layer.type || `Layer-${index + 1}`}</strong>
         <span>${Number(layer.thickness_nm).toFixed(4)} nm</span>
       </div>
     `).join("");
