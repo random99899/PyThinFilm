@@ -127,6 +127,7 @@ export class SineWaveRenderer {
         polVec, startV, kVec, len,
         phaseOffset: d.phaseOffset ?? 0,
         amplitude: d.amplitude,
+        displayScale: Number.isFinite(d.displayScale) ? d.displayScale : 1,
         amplitudeEnvelope: d.amplitudeEnvelope ?? null,
         isSuperposition: d.isSuperposition || false,
       });
@@ -142,7 +143,7 @@ export class SineWaveRenderer {
         positions, bufAttr,
         k, omega,
         polVec, startV, kVec, len,
-        phaseOffset, amplitude, amplitudeEnvelope, isSuperposition
+        phaseOffset, amplitude, displayScale, amplitudeEnvelope, isSuperposition
       } = w;
 
       const N = WAVE_SEGMENTS;
@@ -158,7 +159,7 @@ export class SineWaveRenderer {
           // Standing wave equal-amplitude visual superposition
           const fwd = amplitude * Math.sin(k * s - omega * time + phaseOffset);
           const bwd = amplitude * Math.sin(k * (len - s) - omega * time + phaseOffset);
-          disp = fwd + bwd;
+          disp = displayScale * (fwd + bwd);
         } else {
           const phase = k * s - omega * time + phaseOffset;
           let amp = amplitude;
@@ -169,7 +170,7 @@ export class SineWaveRenderer {
             );
             amp = amplitude * amplitudeEnvelope[envIdx];
           }
-          disp = amp * Math.sin(phase);
+          disp = displayScale * amp * Math.sin(phase);
         }
 
         positions[i * 3]     = bx + polVec.x * disp;

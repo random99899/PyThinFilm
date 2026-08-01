@@ -1,4 +1,8 @@
 import { defineConfig } from "vite";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: "./",
@@ -8,6 +12,12 @@ export default defineConfig({
     assetsDir: "assets",
     sourcemap: false,
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+        solarAr: resolve(__dirname, "apps/solar-ar/index.html"),
+      },
+    },
   },
   server: {
     port: 3000,

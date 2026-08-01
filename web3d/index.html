@@ -30,7 +30,7 @@
           
           <div id="status-badge-container" class="status-badge-container"></div>
 
-          <div class="physics-disclaimer-banner">
+          <div class="physics-disclaimer-banner" style="position: absolute; top: 10px; left: 10px; background: rgba(15,23,42,0.85); color: #94a3b8; padding: 6px 12px; border-radius: 6px; font-size: 12px; border: 1px solid #334155; pointer-events: none; z-index: 10;">
             <span style="color: #38bdf8;">数值光谱:</span> Python TMM &nbsp;|&nbsp; 
             <span style="color: #f59e0b;">空间波长:</span> 视觉缩放 &nbsp;|&nbsp; 
             <span style="color: #34d399;">动画振幅:</span> 教学示意 / 场包络
@@ -39,9 +39,6 @@
           <div class="controls-overlay">
             <button id="btn-play-pause">播放/暂停</button>
             <button id="btn-reset-view">视角复位</button>
-            <button id="btn-view-isometric" class="prototype-camera-control hidden">等轴剖视</button>
-            <button id="btn-view-side" class="prototype-camera-control hidden">侧面剖视</button>
-            <button id="btn-view-optical" class="prototype-camera-control hidden">光路视角</button>
             <button id="btn-toggle-pol">切换 TE/TM</button>
             <button id="btn-explode-layers">展开/叠合</button>
           </div>

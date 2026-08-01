@@ -64,6 +64,51 @@ describe("SineWaveRenderer Unit Tests", () => {
     expect(updatedZ0).not.toBe(initialZ0);
   });
 
+  it("applies one shared display scale without changing zero or amplitude ratios", () => {
+    const descriptors = [
+      {
+        id: "unit_scale",
+        start: [0, 4, 0],
+        end: [0, 0, 0],
+        amplitude: 0.1,
+        displayScale: 1,
+        wavelength: 0.8,
+        speed: 0,
+        pol: "TE",
+        color: 0xef4444,
+      },
+      {
+        id: "double_scale",
+        start: [1, 4, 0],
+        end: [1, 0, 0],
+        amplitude: 0.1,
+        displayScale: 2,
+        wavelength: 0.8,
+        speed: 0,
+        pol: "TE",
+        color: 0xef4444,
+      },
+      {
+        id: "zero_wave",
+        start: [2, 4, 0],
+        end: [2, 0, 0],
+        amplitude: 0,
+        displayScale: 2,
+        wavelength: 0.8,
+        speed: 0,
+        pol: "TE",
+        color: 0xef4444,
+      },
+    ];
+
+    waveRenderer.build(descriptors);
+    waveRenderer.update(0);
+    const positions = waveRenderer.getWavePositions();
+    const maxAbsZ = (values) => Math.max(...values.filter((_, index) => index % 3 === 2).map(Math.abs));
+    expect(maxAbsZ(positions[1]) / maxAbsZ(positions[0])).toBeCloseTo(2, 5);
+    expect(maxAbsZ(positions[2])).toBe(0);
+  });
+
   it("disposes geometries and materials cleanly without leaks", () => {
     const descriptors = [
       {

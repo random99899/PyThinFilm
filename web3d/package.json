@@ -7,6 +7,7 @@
     "sync-registry": "node scripts/sync-registry.mjs",
     "predev": "npm run sync-registry",
     "dev": "vite",
+    "dev:solar": "vite --open /apps/solar-ar/",
     "prebuild": "npm run sync-registry",
     "build": "vite build",
     "preview": "vite preview",
