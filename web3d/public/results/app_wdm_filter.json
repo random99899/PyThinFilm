@@ -2,8 +2,8 @@
   "schema_version": "1.0.0",
   "case_id": "app_wdm_filter",
   "title": "WDM 通信滤光片",
-  "export_time": "2026-08-01T07:08:20.620827+00:00",
-  "git_commit": "a8f58453392719158b23225a4587b3366c5e071d",
+  "export_time": "2026-08-01T07:31:09.089004+00:00",
+  "git_commit": "23eaed26afa2d552a13df17f18a717420e756068",
   "visualization_template": "defect-cavity",
   "template_mode": "DEFECT_CAVITY_MODE",
   "run_default_parameters": {
@@ -3657,5 +3657,5 @@
   "animation_semantics": "STANDING_WAVE_ILLUSTRATION",
   "physics_input_hash": "1f9a2201171847f0",
   "physics_result_hash": "d90ab925ff63bd45",
-  "result_hash": "4fbc8f84115fe9f1"
+  "result_hash": "efb1e5c910e47e1d"
 }
