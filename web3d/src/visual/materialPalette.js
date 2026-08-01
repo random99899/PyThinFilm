@@ -19,6 +19,9 @@ function normalizeMaterialName(materialName) {
     titania: "TiO2",
     silicon: "Si",
     substrate: "Substrate",
+    h: "TiO2",
+    l: "SiO2",
+    c: "SiO2",
   };
   return aliases[raw.toLowerCase()] || raw;
 }

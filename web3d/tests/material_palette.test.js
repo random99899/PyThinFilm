@@ -23,4 +23,10 @@ describe("Stage C.V1A material palette", () => {
     expect(getMaterialAppearance("TiO2").metalness).toBe(0);
     expect(getMaterialAppearance("Ag").metalness).toBeGreaterThan(0);
   });
+
+  it("maps engineering H/L/C aliases to stable physical material colors", () => {
+    expect(getMaterialAppearance("H").color).toBe(getMaterialAppearance("TiO2").color);
+    expect(getMaterialAppearance("L").color).toBe(getMaterialAppearance("SiO2").color);
+    expect(getMaterialAppearance("C").color).toBe(getMaterialAppearance("SiO2").color);
+  });
 });

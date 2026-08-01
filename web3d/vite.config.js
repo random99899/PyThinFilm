@@ -16,6 +16,9 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         solarAr: resolve(__dirname, "apps/solar-ar/index.html"),
+        wdmFilter: resolve(__dirname, "apps/wdm-filter/index.html"),
+        laserMirror: resolve(__dirname, "apps/laser-mirror/index.html"),
+        phoneLensAr: resolve(__dirname, "apps/phone-lens-ar/index.html"),
       },
     },
   },
