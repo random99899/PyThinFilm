@@ -221,6 +221,60 @@ export const ENGINEERING_CASE_CONFIGS = Object.freeze({
     },
     caveat: "蓝、绿、红三个波长用于检查可见光颜色一致性；不得由单点波形替代全波段指标。",
   }),
+  app_smart_window: Object.freeze({
+    caseId: "app_smart_window", slug: "smart-window", title: "智能调温窗 Low-E 膜",
+    kicker: "PyThinFilm · 独立工程应用", expectedLayerCount: 3, sceneName: "StandaloneSmartWindowScene",
+    presets: Object.freeze([
+      { id: "visible", label: "可见光 550", wavelengthNm: 550 },
+      { id: "nir", label: "近红外 1000", wavelengthNm: 1000 },
+      { id: "reflective", label: "反射峰值", selector: "maxR" },
+    ]),
+    classify({ r, t, a }) {
+      if (t >= 0.6) return { id: "LOW_REFLECTION", label: "高透射点：透射波占主导" };
+      if (r >= 0.5) return { id: "RELATIVE_HIGH", label: "热反射点：反射波占主导" };
+      if (a >= 0.2) return { id: "INTERMEDIATE", label: "有损区：吸收不可忽略" };
+      return { id: "INTERMEDIATE", label: "选择性过渡区" };
+    },
+    caveat: "当前正式 JSON 表示固定 WO3/NiO/Ag 光谱状态，不伪造电致变色切换过程。",
+  }),
+  guided_grating_emt: Object.freeze({
+    caseId: "guided_grating_emt", slug: "guided-grating-emt", title: "一维亚波长光栅 EMT 零级近似",
+    kicker: "PyThinFilm · 独立 EMT 教学案例", expectedLayerCount: 1, sceneName: "StandaloneGuidedGratingEmtScene",
+    presets: Object.freeze([
+      { id: "target", label: "1550 nm", wavelengthNm: 1550 },
+      { id: "peak", label: "反射峰值", selector: "maxR" },
+      { id: "minimum", label: "反射谷值", selector: "minR" },
+    ]),
+    classify: lowHighReflectance,
+    caveat: "方块只表示 TE/TM 各向异性等效层；ρ≥1 的当前参数属于 EMT 失效边界，不代表真实光栅齿或全波衍射。",
+  }),
+  mat_library_demo: Object.freeze({
+    caseId: "mat_library_demo", slug: "material-library", title: "真实材料库与色散插值演示",
+    kicker: "PyThinFilm · 独立材料案例", expectedLayerCount: 1, sceneName: "StandaloneMaterialLibraryScene",
+    presets: singleLayerPresets, classify: lowHighReflectance,
+    caveat: "独立场景选用材料库中的 MgF2/SiO2 单层代表例；不是把全部材料同时画成一个膜系。",
+  }),
+  pdrc_cooling_bundle: Object.freeze({
+    caseId: "pdrc_cooling_bundle", slug: "pdrc-cooling", title: "PDRC 被动辐射制冷评估束",
+    kicker: "PyThinFilm · 独立研究案例", expectedLayerCount: 6, sceneName: "StandalonePdrcCoolingScene",
+    presets: Object.freeze([
+      { id: "solar", label: "太阳谱 550", wavelengthNm: 550 },
+      { id: "window", label: "大气窗 10000", wavelengthNm: 10000 },
+      { id: "absorbing", label: "吸收峰值", selector: "minT" },
+    ]),
+    classify({ r, t, a, wavelengthNm }) {
+      if (wavelengthNm >= 8000 && wavelengthNm <= 13000 && a >= 0.7) return { id: "LOW_REFLECTION", label: "大气窗口高发射候选" };
+      if (wavelengthNm <= 2500 && r >= 0.85) return { id: "RELATIVE_HIGH", label: "太阳波段高反射候选" };
+      return { id: "INTERMEDIATE", label: "宽谱筛选点：查看正式 R/T/A" };
+    },
+    caveat: "这是 Python 内置有效光学常数的第一版宽谱筛选，不替代真实材料或 COMSOL 最终验证。",
+  }),
+  rugate_80layer_table: Object.freeze({
+    caseId: "rugate_80layer_table", slug: "rugate-80layer-table", title: "80 层 Rugate 褶皱滤光片列表",
+    kicker: "PyThinFilm · 独立研究导出案例", expectedLayerCount: 80, sceneName: "StandaloneRugate80LayerTableScene",
+    presets: dbrPresets, classify: lowHighReflectance,
+    caveat: "完整显示 COMSOL 友好表对应的八十层离散结构；光谱由同一 Python 层表送入 TMM 获得。",
+  }),
 });
 
 export function getEngineeringCaseConfig(caseId) {

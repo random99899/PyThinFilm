@@ -9,7 +9,8 @@ const additionalCaseSlugs = [
   "fp-single-halfwave", "fp-filter", "narrowband-filter", "tamm-phase-bundle",
   "porous-sio2-layer", "porous-double-ar", "moth-eye-gradient", "double-ar",
   "quarter-wave-double-layer", "triple-ar", "fp-double-halfwave", "rugate-filter",
-  "neutral-beamsplitter",
+  "neutral-beamsplitter", "smart-window", "guided-grating-emt", "material-library",
+  "pdrc-cooling", "rugate-80layer-table",
 ];
 
 export default defineConfig({
