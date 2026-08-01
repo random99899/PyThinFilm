@@ -110,7 +110,12 @@ export class SineWaveRenderer {
       bufAttr.setUsage(THREE.DynamicDrawUsage);
       geo.setAttribute('position', bufAttr);
 
-      const mat  = new THREE.LineBasicMaterial({ color: d.color, linewidth: d.isSuperposition ? 3 : 2 });
+      const mat  = new THREE.LineBasicMaterial({
+        color: d.color,
+        linewidth: d.linewidth ?? (d.isSuperposition ? 3 : 2),
+        transparent: d.opacity !== undefined,
+        opacity: d.opacity ?? 1,
+      });
       const line = new THREE.Line(geo, mat);
       line.name  = d.id || 'wave';
       this._group.add(line);

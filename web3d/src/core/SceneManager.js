@@ -1,23 +1,49 @@
 import * as THREE from "three";
+import { getVisualTheme } from "../visual/visualTheme.js";
 
 export class SceneManager {
   constructor() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color("#0b0f17");
-    this.initLights();
+    this.currentThemeId = null;
+    this.applyVisualTheme("LEGACY_DARK");
   }
 
-  initLights() {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    this.scene.add(ambientLight);
+  applyVisualTheme(themeId) {
+    const theme = getVisualTheme(themeId);
+    if (this.currentThemeId === theme.id) return;
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight1.position.set(5, 10, 7);
-    this.scene.add(dirLight1);
+    const managedLights = this.scene.children.filter((child) => child.userData?.managedVisualLight);
+    managedLights.forEach((light) => this.scene.remove(light));
 
-    const dirLight2 = new THREE.DirectionalLight(0x3b82f6, 0.5);
-    dirLight2.position.set(-5, -5, -5);
-    this.scene.add(dirLight2);
+    this.scene.background = new THREE.Color(theme.background);
+    this.scene.fog = theme.fog
+      ? new THREE.Fog(theme.fog.color, theme.fog.near, theme.fog.far)
+      : null;
+
+    if (theme.lights.hemisphere) {
+      const config = theme.lights.hemisphere;
+      const light = new THREE.HemisphereLight(config.skyColor, config.groundColor, config.intensity);
+      light.userData.managedVisualLight = true;
+      this.scene.add(light);
+    }
+
+    if (theme.lights.ambient) {
+      const config = theme.lights.ambient;
+      const light = new THREE.AmbientLight(config.color, config.intensity);
+      light.userData.managedVisualLight = true;
+      this.scene.add(light);
+    }
+
+    for (const key of ["directionalPrimary", "directionalFill"]) {
+      const config = theme.lights[key];
+      if (!config) continue;
+      const light = new THREE.DirectionalLight(config.color, config.intensity);
+      light.position.set(...config.position);
+      light.userData.managedVisualLight = true;
+      this.scene.add(light);
+    }
+
+    this.currentThemeId = theme.id;
   }
 
   getScene() {

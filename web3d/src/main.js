@@ -83,6 +83,13 @@ class App {
         get animationState() {
           return appSelf.animationController ? { isPlaying: appSelf.animationController.isPlaying, time: appSelf.animationController.time } : null;
         },
+        get currentCameraPreset() { return appSelf.cameraManager?.currentPresetName || null; },
+        get selectedLayerIndex() { return appSelf.currentTemplateInstance?.selectedLayerIndex ?? null; },
+        getLayerScreenPositions: () => appSelf.currentTemplateInstance?.getLayerScreenPositions?.(
+          appSelf.cameraManager.getCamera(),
+          appSelf.rendererLifecycle.getDomElement()
+        ) || [],
+        setCameraPreset: (presetName) => appSelf.setPrototypeCameraPreset(presetName),
       };
 
       // Check URL query parameters for initial case (e.g. ?case=app_solar_cell_ar)
@@ -158,6 +165,18 @@ class App {
       this.cameraManager.resetView();
     });
 
+    document.querySelector("#btn-view-isometric")?.addEventListener("click", () => {
+      this.setPrototypeCameraPreset("ISOMETRIC_SECTION");
+    });
+
+    document.querySelector("#btn-view-side")?.addEventListener("click", () => {
+      this.setPrototypeCameraPreset("SIDE_SECTION");
+    });
+
+    document.querySelector("#btn-view-optical")?.addEventListener("click", () => {
+      this.setPrototypeCameraPreset("OPTICAL_PATH");
+    });
+
     document.querySelector("#btn-toggle-pol")?.addEventListener("click", () => {
       this.currentPolarization = this.currentPolarization === "TE" ? "TM" : "TE";
       if (this.currentTemplateInstance && typeof this.currentTemplateInstance.setWavelengthAndPolarization === "function") {
@@ -171,6 +190,12 @@ class App {
       this.isExploded = !this.isExploded;
       this.rebuildSceneObjects();
     });
+  }
+
+  setPrototypeCameraPreset(presetName) {
+    if (this.currentCaseConfig?.id !== "app_solar_cell_ar") return false;
+    const bounds = this.currentTemplateInstance?.getStructureBounds?.();
+    return this.cameraManager.applyPreset(presetName, bounds);
   }
 
   setWavelength(wl) {
@@ -260,9 +285,32 @@ class App {
       isExploded: this.isExploded,
       polarization: this.currentPolarization,
       selectedWavelengthNm: this.currentWavelengthNm,
+      camera: this.cameraManager.getCamera(),
+      domElement: this.rendererLifecycle.getDomElement(),
     });
 
     scene.add(this.currentTemplateGroup);
+    this.configureCaseVisuals();
+  }
+
+  configureCaseVisuals() {
+    const isSolarPrototype = this.currentCaseConfig?.id === "app_solar_cell_ar";
+    document.querySelector("#app")?.classList.toggle("academic-light", isSolarPrototype);
+    document.querySelectorAll(".prototype-camera-control").forEach((button) => {
+      button.classList.toggle("hidden", !isSolarPrototype);
+    });
+
+    if (isSolarPrototype) {
+      this.sceneManager.applyVisualTheme("ACADEMIC_LIGHT");
+      const bounds = this.currentTemplateInstance?.getStructureBounds?.();
+      if (bounds && !bounds.isEmpty()) {
+        this.cameraManager.setDefaultPreset("ISOMETRIC_SECTION", bounds);
+      }
+    } else {
+      this.sceneManager.applyVisualTheme("LEGACY_DARK");
+      this.cameraManager.clearDefaultPreset();
+      this.cameraManager.resetView();
+    }
   }
 }
 
