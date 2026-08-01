@@ -2,8 +2,8 @@
   "schema_version": "1.0.0",
   "case_id": "app_laser_mirror",
   "title": "激光高反镜 / DBR",
-  "export_time": "2026-08-01T07:31:09.118599+00:00",
-  "git_commit": "23eaed26afa2d552a13df17f18a717420e756068",
+  "export_time": "2026-08-01T07:35:37.424251+00:00",
+  "git_commit": "b6b5756450bb5c04d77d4443c7741aa2ad73e147",
   "visualization_template": "periodic-stack",
   "template_mode": "DBR_PERIODIC_MODE",
   "run_default_parameters": {
@@ -2266,5 +2266,5 @@
   "animation_semantics": "TEACHING_ILLUSTRATION",
   "physics_input_hash": "e62dca8b0b02bb39",
   "physics_result_hash": "7d04c16d6663cfb1",
-  "result_hash": "56cb6c30c950feda"
+  "result_hash": "08dd1794ea515e49"
 }

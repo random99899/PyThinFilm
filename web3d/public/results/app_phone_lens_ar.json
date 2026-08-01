@@ -2,8 +2,8 @@
   "schema_version": "1.0.0",
   "case_id": "app_phone_lens_ar",
   "title": "手机镜头多层 AR",
-  "export_time": "2026-08-01T07:31:09.146486+00:00",
-  "git_commit": "23eaed26afa2d552a13df17f18a717420e756068",
+  "export_time": "2026-08-01T07:35:37.448767+00:00",
+  "git_commit": "b6b5756450bb5c04d77d4443c7741aa2ad73e147",
   "visualization_template": "periodic-stack",
   "template_mode": "GENERIC_MULTILAYER_MODE",
   "run_default_parameters": {
@@ -1480,5 +1480,5 @@
   "animation_semantics": "TEACHING_ILLUSTRATION",
   "physics_input_hash": "e23869c0d9e8f95a",
   "physics_result_hash": "2b6035880745fcbf",
-  "result_hash": "55feadff4bcc6acb"
+  "result_hash": "51e76d4ab817aeff"
 }

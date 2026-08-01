@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "case_id": "tamm_phase_bundle",
   "title": "Tamm界面态/拓扑反射相位",
-  "source_commit": "23eaed26afa2d552a13df17f18a717420e756068",
+  "source_commit": "b6b5756450bb5c04d77d4443c7741aa2ad73e147",
   "source_file": "cases/tamm/run_tamm_phase_bundle.py",
   "source_symbol": "main",
-  "generated_at": "2026-08-01T15:31:08.868364",
+  "generated_at": "2026-08-01T15:35:37.173225",
   "calculation_source": "python_export",
   "material_model": "CONSTANT_COMPLEX_INDEX",
   "metal_nk_source": "OFFICIAL_CASE_HARDCODED_CONSTANT",
@@ -9138,5 +9138,5 @@
   "input_parameter_hash": "c11a933225b46366",
   "physics_input_hash": "9b278de69533d62f",
   "physics_result_hash": "77b9d917d6a0bbed",
-  "result_hash": "b64bad1118f462a9"
+  "result_hash": "fd8b53367e3b6211"
 }
