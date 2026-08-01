@@ -35,6 +35,7 @@ class App {
 
     this.isExploded = false;
     this.currentPolarization = "TE";
+    this.currentWavelengthNm = null;
 
     this.templateMap = {
       "single-interface": SingleInterfaceTemplate,
@@ -52,29 +53,35 @@ class App {
       this.initEngine();
       this.initUI();
       
+      const appSelf = this;
       // Expose debug interface for automated E2E & unit inspection
       window.__WEB3D_DEBUG__ = {
-        app: this,
-        get rendererInstanceCount() { return this.app.rendererLifecycle && this.app.rendererLifecycle.renderer ? 1 : 0; },
-        get rendererDisposeCount() { return this.app.rendererLifecycle ? this.app.rendererLifecycle.rendererDisposeCount : 0; },
-        get forceContextLossCount() { return this.app.rendererLifecycle ? this.app.rendererLifecycle.contextLossCount : 0; },
-        get animationCancelCount() { return this.app.rendererLifecycle ? this.app.rendererLifecycle.animationCancelCount : 0; },
-        get caseUpdateSubscriptionRemovalCount() { return this.app.animationController ? this.app.animationController.caseUpdateSubscriptionRemovalCount : 0; },
+        app: appSelf,
+        get rendererInstanceCount() { return appSelf.rendererLifecycle && appSelf.rendererLifecycle.renderer ? 1 : 0; },
+        get rendererDisposeCount() { return appSelf.rendererLifecycle ? appSelf.rendererLifecycle.rendererDisposeCount : 0; },
+        get forceContextLossCount() { return appSelf.rendererLifecycle ? appSelf.rendererLifecycle.contextLossCount : 0; },
+        get animationCancelCount() { return appSelf.rendererLifecycle ? appSelf.rendererLifecycle.animationCancelCount : 0; },
+        get caseUpdateSubscriptionRemovalCount() { return appSelf.animationController ? appSelf.animationController.caseUpdateSubscriptionRemovalCount : 0; },
         get geometryDisposeCount() { return ResourceDisposer.geometryDisposeCount; },
         get materialDisposeCount() { return ResourceDisposer.materialDisposeCount; },
         get eventListenerRemovalCount() { return ResourceDisposer.eventListenerRemovalCount; },
         get activeWaveCount() {
-          return (this.app.currentTemplateInstance && this.app.currentTemplateInstance.waveRenderer)
-            ? this.app.currentTemplateInstance.waveRenderer.waveCount : 0;
+          return (appSelf.currentTemplateInstance && appSelf.currentTemplateInstance.waveRenderer)
+            ? appSelf.currentTemplateInstance.waveRenderer.waveCount : 0;
         },
         getWavePositions: () => {
-          return (this.currentTemplateInstance && this.currentTemplateInstance.waveRenderer)
-            ? this.currentTemplateInstance.waveRenderer.getWavePositions() : [];
+          return (appSelf.currentTemplateInstance && appSelf.currentTemplateInstance.waveRenderer)
+            ? appSelf.currentTemplateInstance.waveRenderer.getWavePositions() : [];
         },
-        get currentCaseConfig() { return this.app.currentCaseConfig; },
-        get currentCaseResult() { return this.app.currentCaseResult; },
+        setWavelength: (wl) => appSelf.setWavelength(wl),
+        setPolarization: (pol) => {
+          appSelf.currentPolarization = pol;
+          appSelf.setWavelength(appSelf.currentWavelengthNm);
+        },
+        get currentCaseConfig() { return appSelf.currentCaseConfig; },
+        get currentCaseResult() { return appSelf.currentCaseResult; },
         get animationState() {
-          return this.animationController ? { isPlaying: this.animationController.isPlaying, time: this.animationController.time } : null;
+          return appSelf.animationController ? { isPlaying: appSelf.animationController.isPlaying, time: appSelf.animationController.time } : null;
         },
       };
 
@@ -153,13 +160,26 @@ class App {
 
     document.querySelector("#btn-toggle-pol")?.addEventListener("click", () => {
       this.currentPolarization = this.currentPolarization === "TE" ? "TM" : "TE";
-      this.rebuildSceneObjects();
+      if (this.currentTemplateInstance && typeof this.currentTemplateInstance.setWavelengthAndPolarization === "function") {
+        this.currentTemplateInstance.setWavelengthAndPolarization(this.currentWavelengthNm, this.currentPolarization);
+      } else {
+        this.rebuildSceneObjects();
+      }
     });
 
     document.querySelector("#btn-explode-layers")?.addEventListener("click", () => {
       this.isExploded = !this.isExploded;
       this.rebuildSceneObjects();
     });
+  }
+
+  setWavelength(wl) {
+    this.currentWavelengthNm = wl;
+    if (this.currentTemplateInstance && typeof this.currentTemplateInstance.setWavelengthAndPolarization === "function") {
+      this.currentTemplateInstance.setWavelengthAndPolarization(wl, this.currentPolarization);
+    } else {
+      this.rebuildSceneObjects();
+    }
   }
 
   async loadCase(caseId) {
@@ -193,6 +213,7 @@ class App {
 
     this.currentCaseConfig = caseConfig;
     this.currentCaseResult = resultRes.data;
+    this.currentWavelengthNm = null; // reset to default for newly loaded case
 
     // Update UI Panels
     renderParameterPanel(document.querySelector("#parameter-panel"), caseConfig);
@@ -238,6 +259,7 @@ class App {
     this.currentTemplateGroup = this.currentTemplateInstance.build(this.currentCaseResult, {
       isExploded: this.isExploded,
       polarization: this.currentPolarization,
+      selectedWavelengthNm: this.currentWavelengthNm,
     });
 
     scene.add(this.currentTemplateGroup);

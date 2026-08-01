@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { SineWaveRenderer } from "../core/SineWaveRenderer.js";
+import { calculateWaveAmplitudesFromSpectrum } from "../core/spectrumWaveAmp.js";
 
 export class DefectCavityTemplate {
   constructor(container) {
@@ -9,19 +10,33 @@ export class DefectCavityTemplate {
     this.waveRenderer = new SineWaveRenderer();
     this.group.add(this.waveRenderer.getGroup());
     
-    // Explicit teaching semantics downgrade & template mode
+    // Explicit Mode Flags & Semantics
     this.templateMode = "DEFECT_CAVITY_MODE";
-    this.animationSemantics = "STANDING_WAVE_ILLUSTRATION";
+    this.animationSemantics = "TEACHING_ILLUSTRATION";
+    this.waveAmplitudeSource = "SELECTED_WAVELENGTH_R_T_SCHEMATIC";
     this.fieldAmplitudeSource = "VISUAL_EQUAL_AMPLITUDE";
     this.quantitativeFieldStatus = "NOT_AVAILABLE";
+
+    this.caseResult = null;
+    this.polarization = "TE";
+    this.selectedWavelengthNm = 1550;
+    this.cavityYCenter = 0;
+    this.waveAmpInfo = null;
   }
 
   build(caseResult, options = {}) {
     this.dispose();
     this.group.add(this.waveRenderer.getGroup());
 
+    this.caseResult = caseResult;
+    this.options = options;
     const isExploded = options.isExploded || false;
-    const polarization = options.polarization || "TE";
+    this.polarization = options.polarization || "TE";
+    if (options.selectedWavelengthNm) {
+      this.selectedWavelengthNm = options.selectedWavelengthNm;
+    } else if (caseResult && caseResult.metrics && caseResult.metrics.peak_wavelength_nm) {
+      this.selectedWavelengthNm = caseResult.metrics.peak_wavelength_nm;
+    }
 
     const layersData = (caseResult && caseResult.layers) ? caseResult.layers : [
       { layer_index: 1, type: "H", role: "mirror_layer", n: 2.15, thickness_nm: 63.95 },
@@ -42,7 +57,7 @@ export class DefectCavityTemplate {
     let currentY = 0;
     const width = 6;
     const depth = 4;
-    let cavityYCenter = 0;
+    this.cavityYCenter = 0;
 
     // Ambient Air
     const airGeo = new THREE.BoxGeometry(width, 0.4, depth);
@@ -76,7 +91,7 @@ export class DefectCavityTemplate {
       const posY = currentY - thicknessVisual / 2;
       mesh.position.y = posY;
       if (isCavity) {
-        cavityYCenter = posY;
+        this.cavityYCenter = posY;
       }
       this.group.add(mesh);
       currentY -= thicknessVisual + gap;
@@ -89,15 +104,35 @@ export class DefectCavityTemplate {
     subMesh.position.y = currentY - 0.5;
     this.group.add(subMesh);
 
-    // Rays & Wave Descriptors
+    // Rays & Wave Descriptors using Selected Wavelength Spectrum R/T
+    this.rebuildWaveDescriptors();
+
+    // Polarization Helper Arrow
+    const polDir = this.polarization === "TE" ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
+    const polHex = this.polarization === "TE" ? 0xf59e0b : 0xec4899;
+    const arrow = new THREE.ArrowHelper(polDir, new THREE.Vector3(0, 2.2, 0), 1.5, polHex, 0.4, 0.2);
+    arrow.name = "polarization_arrow";
+    this.group.add(arrow);
+
+    return this.group;
+  }
+
+  rebuildWaveDescriptors() {
+    this.waveAmpInfo = calculateWaveAmplitudesFromSpectrum(
+      this.caseResult,
+      this.polarization,
+      this.selectedWavelengthNm
+    );
+    this.selectedWavelengthNm = this.waveAmpInfo.selectedWavelengthNm;
+
     const angleRad = (45 * Math.PI) / 180;
     const incStart = [-4 * Math.sin(angleRad), 4 * Math.cos(angleRad), 0];
     const origin = [0, 0, 0];
     const refEnd = [4 * Math.sin(angleRad), 4 * Math.cos(angleRad), 0];
     const transEnd = [2 * Math.sin(angleRad * 0.7), -5 * Math.cos(angleRad * 0.7), 0];
 
-    const cavityTop = [0, cavityYCenter + 0.25, 0];
-    const cavityBottom = [0, cavityYCenter - 0.25, 0];
+    const cavityTop = [0, this.cavityYCenter + 0.25, 0];
+    const cavityBottom = [0, this.cavityYCenter - 0.25, 0];
 
     const waveDescriptors = [
       {
@@ -107,30 +142,30 @@ export class DefectCavityTemplate {
         amplitude: 0.25,
         wavelength: 0.8,
         speed: 2.0,
-        pol: polarization,
+        pol: this.polarization,
         color: 0xef4444,
       },
       {
         id: "reflected_wave",
         start: origin,
         end: refEnd,
-        amplitude: 0.05,
+        amplitude: this.waveAmpInfo.rAmp,
         wavelength: 0.8,
         speed: 2.0,
-        pol: polarization,
+        pol: this.polarization,
         color: 0x3b82f6,
       },
       {
         id: "transmitted_wave",
         start: origin,
         end: transEnd,
-        amplitude: 0.24,
+        amplitude: this.waveAmpInfo.tAmp,
         wavelength: 0.6,
         speed: 2.0,
-        pol: polarization,
+        pol: this.polarization,
         color: 0x10b981,
       },
-      // Teaching standing wave illustration: Equal-amplitude visual superposition
+      // Teaching standing wave illustration
       {
         id: "cavity_standing_wave_superposition",
         start: cavityTop,
@@ -138,21 +173,19 @@ export class DefectCavityTemplate {
         amplitude: 0.22,
         wavelength: 0.25,
         speed: 2.0,
-        pol: polarization,
+        pol: this.polarization,
         color: 0x14b8a6,
         isSuperposition: true,
       },
     ];
 
     this.waveRenderer.build(waveDescriptors);
+  }
 
-    // Polarization Helper Arrow
-    const polDir = polarization === "TE" ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
-    const polHex = polarization === "TE" ? 0xf59e0b : 0xec4899;
-    const arrow = new THREE.ArrowHelper(polDir, new THREE.Vector3(0, 2.2, 0), 1.5, polHex, 0.4, 0.2);
-    this.group.add(arrow);
-
-    return this.group;
+  setWavelengthAndPolarization(wavelengthNm, polarization) {
+    if (wavelengthNm) this.selectedWavelengthNm = wavelengthNm;
+    if (polarization) this.polarization = polarization;
+    this.rebuildWaveDescriptors();
   }
 
   updateAnimation(timeSeconds) {

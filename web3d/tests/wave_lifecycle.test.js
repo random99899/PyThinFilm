@@ -26,7 +26,7 @@ describe("Wave Lifecycle & Resource Disposal Metrics Tests", () => {
     const cavityTemp = new DefectCavityTemplate(null);
     cavityTemp.build(null, { polarization: "TM" });
 
-    expect(cavityTemp.animationSemantics).toBe("STANDING_WAVE_ILLUSTRATION");
+    expect(cavityTemp.animationSemantics).toBe("TEACHING_ILLUSTRATION");
     expect(cavityTemp.fieldAmplitudeSource).toBe("VISUAL_EQUAL_AMPLITUDE");
     expect(cavityTemp.quantitativeFieldStatus).toBe("NOT_AVAILABLE");
     expect(cavityTemp.waveRenderer.waveCount).toBe(4);

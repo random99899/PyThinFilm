@@ -21,7 +21,7 @@ describe("PeriodicStackTemplate GENERIC_MULTILAYER_MODE & Dynamic Wave Semantics
     expect(template.showDbrStopband).toBe(false);
     expect(template.showPeriodCount).toBe(false);
     expect(template.showRepresentativeInternalDbrWaves).toBe(false);
-    expect(template.waveAmplitudeSource).toBe("R_T_SCHEMATIC");
+    expect(template.waveAmplitudeSource).toBe("SELECTED_WAVELENGTH_R_T_SCHEMATIC");
     expect(template.animationSemantics).toBe("TEACHING_ILLUSTRATION");
   });
 
@@ -35,11 +35,11 @@ describe("PeriodicStackTemplate GENERIC_MULTILAYER_MODE & Dynamic Wave Semantics
     expect(template.showDbrStopband).toBe(false);
     expect(template.showPeriodCount).toBe(false);
     expect(template.showRepresentativeInternalDbrWaves).toBe(false);
-    expect(template.waveAmplitudeSource).toBe("R_T_SCHEMATIC");
+    expect(template.waveAmplitudeSource).toBe("SELECTED_WAVELENGTH_R_T_SCHEMATIC");
     expect(template.animationSemantics).toBe("TEACHING_ILLUSTRATION");
   });
 
-  it("remains in DBR_PERIODIC_MODE for high_reflector and laser mirror", () => {
+  it("remains in DBR_PERIODIC_MODE for high_reflector and laser mirror but uses SELECTED_WAVELENGTH_R_T_SCHEMATIC", () => {
     const data = loadJson("app_laser_mirror");
     const template = new PeriodicStackTemplate(null);
     template.build(data, { polarization: "TE" });
@@ -48,6 +48,7 @@ describe("PeriodicStackTemplate GENERIC_MULTILAYER_MODE & Dynamic Wave Semantics
     expect(template.isGenericMultilayerMode).toBe(false);
     expect(template.showDbrStopband).toBe(true);
     expect(template.showPeriodCount).toBe(true);
-    expect(template.waveAmplitudeSource).toBe("DBR_DEFAULT");
+    expect(template.waveAmplitudeSource).toBe("SELECTED_WAVELENGTH_R_T_SCHEMATIC");
+    expect(template.animationSemantics).toBe("TEACHING_ILLUSTRATION");
   });
 });
