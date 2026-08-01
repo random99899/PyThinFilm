@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { PeriodicStackTemplate } from "../src/templates/periodic-stack.js";
 import { DefectCavityTemplate } from "../src/templates/defect-cavity.js";
-import { calculateWaveAmplitudesFromSpectrum } from "../src/core/spectrumWaveAmp.js";
+import { calculateWaveAmplitudesFromSpectrum, visualAmplitude } from "../src/core/spectrumWaveAmp.js";
 
 const PUBLIC = resolve(__dirname, "../public");
 
@@ -12,7 +12,34 @@ function loadJson(name) {
   return JSON.parse(readFileSync(p, "utf-8"));
 }
 
-describe("Selected Wavelength Spectrum Point Wave Amplitude Binding Tests", () => {
+describe("Selected Wavelength Spectrum Point Wave Amplitude & Zero-Power Suppression Tests", () => {
+  it("verifies zero-power suppression algorithm (four boundary cases)", () => {
+    const incAmp = 0.25;
+
+    // R=1, T=0 -> tAmp=0
+    const resT0 = visualAmplitude(0, incAmp);
+    expect(resT0.amplitude).toBe(0);
+    expect(resT0.suppressedAsZero).toBe(true);
+    expect(resT0.exaggerated).toBe(false);
+
+    // R=0, T=1 -> rAmp=0
+    const resR0 = visualAmplitude(0, incAmp);
+    expect(resR0.amplitude).toBe(0);
+    expect(resR0.suppressedAsZero).toBe(true);
+
+    // T=1e-14 -> tAmp=0 (under zeroThreshold 1e-10)
+    const resNoise = visualAmplitude(1e-14, incAmp);
+    expect(resNoise.amplitude).toBe(0);
+    expect(resNoise.suppressedAsZero).toBe(true);
+    expect(resNoise.exaggerated).toBe(false);
+
+    // T=1e-5 -> tAmp > 0 and marked exaggerated
+    const resSmall = visualAmplitude(1e-5, incAmp);
+    expect(resSmall.amplitude).toBe(0.04); // clamped to minimumVisible
+    expect(resSmall.suppressedAsZero).toBe(false);
+    expect(resSmall.exaggerated).toBe(true);
+  });
+
   it("1. wave amplitude changes when selectedWavelengthNm changes", () => {
     const data = loadJson("app_wdm_filter");
     const template = new DefectCavityTemplate(null);
@@ -31,7 +58,6 @@ describe("Selected Wavelength Spectrum Point Wave Amplitude Binding Tests", () =
 
   it("2. wave amplitude changes when polarization (TE/TM) switches with different spectra", () => {
     const data = loadJson("app_phone_lens_ar");
-    // Mock distinct TM spectrum for testing
     const modifiedData = JSON.parse(JSON.stringify(data));
     modifiedData.TM = {
       wavelengths: modifiedData.TE.wavelengths,
@@ -78,14 +104,13 @@ describe("Selected Wavelength Spectrum Point Wave Amplitude Binding Tests", () =
 
     expect(res.rawRAmp).toBeCloseTo(expectedRawR, 6);
     expect(res.rawTAmp).toBeCloseTo(expectedRawT, 6);
-    expect(res.rawRAmp).not.toBe(baseIncident * res.rSelected); // Not R linear
+    expect(res.rawRAmp).not.toBe(baseIncident * res.rSelected);
     
-    // Explicitly verify mean R is NOT used
     const meanR = data.TE.R.reduce((a, b) => a + b, 0) / data.TE.R.length;
     expect(res.rSelected).not.toBe(meanR);
   });
 
-  it("6. GENERIC_MULTILAYER_MODE still does NOT display DBR stopband / period fields", () => {
+  it("6. GENERIC_MULTILAYER_MODE still does NOT display DBR fields", () => {
     const data = loadJson("app_solar_cell_ar");
     const template = new PeriodicStackTemplate(null);
     template.build(data, { selectedWavelengthNm: 550 });

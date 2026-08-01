@@ -2,17 +2,44 @@
  * spectrumWaveAmp.js
  *
  * Calculates visual sine wave amplitudes tied to the selected wavelength and polarization
- * in the R/T spectrum.
+ * in the R/T spectrum with zero-power suppression.
  *
- * Math Formula:
- *   A_reflected_visual = A_incident * sqrt(R_selected)
- *   A_transmitted_visual = A_incident * sqrt(T_selected)
- *
- * Exaggeration & Boundaries:
- *   Min visible amplitude = 0.04
- *   Max display limit = 0.35
- *   Flagged with VISUAL_AMPLITUDE_EXAGGERATED if clamped or scaled.
+ * Zero-Power Suppression Rules:
+ *   - Strictly zero or numerical noise (<= 1e-10) -> amplitude = 0, suppressedAsZero = true.
+ *   - Very small non-zero component -> minimumVisible (0.04), exaggerated = true.
+ *   - Normal component -> incidentAmplitude * sqrt(power).
+ *   - Large component -> clamped to maximumVisible (0.35), exaggerated = true.
  */
+
+export function visualAmplitude(power, incidentAmplitude = 0.25, options = {}) {
+  const {
+    zeroThreshold = 1e-10,
+    minimumVisible = 0.04,
+    maximumVisible = 0.35,
+  } = options;
+
+  const safePower = Math.max(0, Number(power));
+
+  if (!Number.isFinite(safePower) || safePower <= zeroThreshold) {
+    return {
+      amplitude: 0,
+      exaggerated: false,
+      suppressedAsZero: true,
+    };
+  }
+
+  const rawAmplitude = incidentAmplitude * Math.sqrt(safePower);
+  const amplitude = Math.max(
+    minimumVisible,
+    Math.min(maximumVisible, rawAmplitude)
+  );
+
+  return {
+    amplitude,
+    exaggerated: amplitude !== rawAmplitude,
+    suppressedAsZero: false,
+  };
+}
 
 export function calculateWaveAmplitudesFromSpectrum(caseResult, polarization = "TE", selectedWavelengthNm = null) {
   let wl = selectedWavelengthNm;
@@ -61,18 +88,14 @@ export function calculateWaveAmplitudesFromSpectrum(caseResult, polarization = "
   rSelected = Math.max(0, Math.min(1, rSelected));
   tSelected = Math.max(0, Math.min(1, tSelected));
 
-  // Visual amplitude formulation: A ∝ sqrt(R), sqrt(T)
   const baseIncidentAmp = 0.25;
+  const rAmpRes = visualAmplitude(rSelected, baseIncidentAmp);
+  const tAmpRes = visualAmplitude(tSelected, baseIncidentAmp);
+
   const rawRAmp = baseIncidentAmp * Math.sqrt(rSelected);
   const rawTAmp = baseIncidentAmp * Math.sqrt(tSelected);
 
-  const minAmp = 0.04;
-  const maxAmp = 0.35;
-
-  const rAmp = Math.max(minAmp, Math.min(maxAmp, rawRAmp));
-  const tAmp = Math.max(minAmp, Math.min(maxAmp, rawTAmp));
-
-  const isExaggerated = (rAmp !== rawRAmp || tAmp !== rawTAmp);
+  const isExaggerated = rAmpRes.exaggerated || tAmpRes.exaggerated;
 
   return {
     selectedWavelengthNm: wl,
@@ -80,8 +103,10 @@ export function calculateWaveAmplitudesFromSpectrum(caseResult, polarization = "
     tSelected,
     rawRAmp,
     rawTAmp,
-    rAmp,
-    tAmp,
+    rAmp: rAmpRes.amplitude,
+    tAmp: tAmpRes.amplitude,
+    rSuppressed: rAmpRes.suppressedAsZero,
+    tSuppressed: tAmpRes.suppressedAsZero,
     isExaggerated,
     VISUAL_AMPLITUDE_EXAGGERATED: isExaggerated,
     waveAmplitudeSource: "SELECTED_WAVELENGTH_R_T_SCHEMATIC",
