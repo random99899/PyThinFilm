@@ -6,6 +6,7 @@ describe("external evidence app configuration", () => {
     const entries = Object.entries(EVIDENCE_CASE_CONFIGS);
     expect(entries).toHaveLength(12);
     expect(new Set(entries.map(([, config]) => config.slug)).size).toBe(12);
+    expect(entries.every(([, config]) => config.sceneType && config.sceneNote)).toBe(true);
   });
 
   it("resolves immutable configs without inventing renderer state", () => {
@@ -21,4 +22,3 @@ describe("external evidence app configuration", () => {
     expect(() => getEvidenceCaseConfig("unknown_case")).toThrow(/未声明外部证据案例/);
   });
 });
-

@@ -37,7 +37,10 @@ test.describe("Stage C.V1F external evidence apps", () => {
 
       expect(state.caseId).toBe(caseId);
       expect(state.evidenceStatus).toBe(evidenceStatus);
-      expect(state.rendererCount).toBe(0);
+      expect(state.rendererCount).toBe(1);
+      await expect(page.locator("#evidence-three-canvas canvas")).toHaveCount(1);
+      await page.locator("#reset-three-view").click();
+      await expect.poll(() => page.evaluate(() => window.__EVIDENCE_APP_DEBUG__.cameraPreset)).toBe("ISOMETRIC_SECTION");
       await expect(page.locator("#evidence-error")).toHaveClass(/hidden/);
       await expect(page.locator("#contract-case-id")).toHaveText(caseId);
       await expect(page.locator(".summary-card")).not.toHaveCount(0);
@@ -58,4 +61,3 @@ test.describe("Stage C.V1F external evidence apps", () => {
     });
   }
 });
-

@@ -1,4 +1,8 @@
 import { getEvidenceCaseConfig } from "./evidenceCaseConfigs.js";
+import { SceneManager } from "../../core/SceneManager.js";
+import { CameraManager } from "../../core/CameraManager.js";
+import { RendererLifecycle } from "../../core/RendererLifecycle.js";
+import { EvidenceThreeScene } from "./EvidenceThreeScene.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -93,6 +97,7 @@ function renderShell(root) {
     <main class="evidence-layout">
       <section class="evidence-main">
         <div id="summary-cards" class="summary-grid"></div>
+        <article class="evidence-card three-card"><div class="section-heading"><span>Three.js 科研场景</span><button id="reset-three-view" type="button">重置视角</button></div><div id="evidence-three-canvas" class="evidence-three-canvas"></div><p id="three-scene-note" class="three-scene-note"></p></article>
         <article class="evidence-card chart-card"><div class="section-heading"><span>正式证据曲线</span><small>SVG · 非像素验收</small></div><div id="evidence-chart" class="evidence-chart"></div></article>
         <article class="evidence-card table-card"><div class="section-heading"><span>分析结果表</span><small>由正式契约读取</small></div><div class="table-scroll"><table><thead id="evidence-table-head"></thead><tbody id="evidence-table-body"></tbody></table></div></article>
       </section>
@@ -110,6 +115,12 @@ export class EvidenceCaseApp {
     this.root = root;
     this.config = getEvidenceCaseConfig(caseId);
     this.contract = null;
+    this.sceneManager = null;
+    this.cameraManager = null;
+    this.rendererLifecycle = null;
+    this.evidenceScene = null;
+    this.boundResize = () => this.onResize();
+    this.boundDispose = () => this.dispose();
   }
 
   async init() {
@@ -121,6 +132,7 @@ export class EvidenceCaseApp {
       this.contract = await response.json();
       if (this.contract.case_id !== this.config.caseId) throw new Error("证据 case_id 不匹配");
       this.render();
+      this.initThreeScene();
       this.exposeDebugApi();
     } catch (error) {
       const boundary = this.root.querySelector("#evidence-error");
@@ -149,6 +161,38 @@ export class EvidenceCaseApp {
     this.root.querySelector("#contract-case-id").textContent = contract.case_id;
     this.root.querySelector("#contract-source").textContent = contract.calculation_source;
     this.root.querySelector("#contract-hash").textContent = contract.evidence_hash;
+    this.root.querySelector("#three-scene-note").textContent = this.config.sceneNote;
+  }
+
+  initThreeScene() {
+    const container = this.root.querySelector("#evidence-three-canvas");
+    this.sceneManager = new SceneManager();
+    this.sceneManager.applyVisualTheme("ACADEMIC_LIGHT");
+    this.cameraManager = new CameraManager(container);
+    this.rendererLifecycle = new RendererLifecycle(container);
+    this.cameraManager.initControls(this.rendererLifecycle.getDomElement());
+    this.evidenceScene = new EvidenceThreeScene(this.config);
+    this.sceneManager.getScene().add(this.evidenceScene.build(this.contract));
+    this.cameraManager.setDefaultPreset("ISOMETRIC_SECTION", this.evidenceScene.getBounds());
+    this.sceneManager.fitFogToCamera(this.cameraManager.getCamera(), this.cameraManager.getControls()?.target);
+    this.root.querySelector("#reset-three-view").addEventListener("click", () => this.resetThreeView());
+    window.addEventListener("resize", this.boundResize);
+    window.addEventListener("beforeunload", this.boundDispose, { once: true });
+    this.rendererLifecycle.startLoop(() => {
+      this.cameraManager.getControls()?.update();
+      this.rendererLifecycle.getRenderer().render(this.sceneManager.getScene(), this.cameraManager.getCamera());
+    });
+  }
+
+  resetThreeView() {
+    this.cameraManager?.resetView();
+    this.sceneManager?.fitFogToCamera(this.cameraManager?.getCamera(), this.cameraManager?.getControls()?.target);
+    return this.cameraManager?.currentPresetName || null;
+  }
+
+  onResize() {
+    this.cameraManager?.onResize();
+    this.rendererLifecycle?.onResize();
   }
 
   exposeDebugApi() {
@@ -159,7 +203,19 @@ export class EvidenceCaseApp {
       get seriesCount() { return app.contract?.series?.length || 0; },
       get tableRowCount() { return app.contract?.table?.rows?.length || 0; },
       get provenanceStatuses() { return (app.contract?.external_data_provenance || []).map((item) => item.status); },
-      rendererInstanceCount: 0,
+      get rendererInstanceCount() { return app.rendererLifecycle?.getRenderer() ? 1 : 0; },
+      get cameraPreset() { return app.cameraManager?.currentPresetName || null; },
+      get sceneType() { return app.config.sceneType; },
+      resetView: () => app.resetThreeView(),
     };
+  }
+
+  dispose() {
+    window.removeEventListener("resize", this.boundResize);
+    window.removeEventListener("beforeunload", this.boundDispose);
+    this.evidenceScene?.dispose();
+    this.cameraManager?.dispose();
+    this.rendererLifecycle?.teardown();
+    this.evidenceScene = null;
   }
 }
