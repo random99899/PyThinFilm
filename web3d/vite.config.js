@@ -11,6 +11,10 @@ const additionalCaseSlugs = [
   "quarter-wave-double-layer", "triple-ar", "fp-double-halfwave", "rugate-filter",
   "neutral-beamsplitter", "smart-window", "guided-grating-emt", "material-library",
   "pdrc-cooling", "rugate-80layer-table",
+  "tamm-interface-priority", "tamm-phase-candidates", "tamm-phase-focus",
+  "tamm-reflection-phase-screen", "tamm-interface-window-bundle", "tamm-interface-window-scan",
+  "absorbing-baseline-template", "absorbing-surface-bundle", "absorbing-surface-gain",
+  "absorbing-surface-gain-trend", "advanced-ar-bundle", "porous-double-ar-topic",
 ];
 
 export default defineConfig({
