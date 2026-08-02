@@ -3,7 +3,7 @@ import { getEngineeringCaseConfig } from "../../src/apps/shared/engineeringCaseC
 import { renderEngineeringShell } from "../../src/apps/shared/engineeringShell.js";
 import { QuarterWaveTeachingController } from "./QuarterWaveTeachingController.js";
 import "../../src/apps/shared/engineeringApp.css";
-import "./quarterWaveTeaching.css";
+import "../../src/teaching/guidedTeaching.css";
 
 const CASE_ID = "quarter_wave_single_layer";
 
