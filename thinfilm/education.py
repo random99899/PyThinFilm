@@ -3615,7 +3615,7 @@ def export_report_case_outputs(
         feature_idx = peak_idx if main_kind in {"T", "A"} or any(
             term in case_key for term in ("reflector", "mirror", "bragg", "quarter_wave_stack")
         ) else valley_idx
-        y0, y1 = focused_power_limits(main_vals)
+        y0, y1 = focused_power_limits(main_vals, min_span=0.02)
 
         main_png_path = output_file(f"{stem}_main.png")
         fig2, ax2 = plt.subplots(figsize=(8, 5))
@@ -3646,48 +3646,7 @@ def export_report_case_outputs(
             ax2.set_xlim(*xlim)
         ax2.set_ylim(y0, y1)
 
-        # C: Overlay faint secondary curves on a right twin-axis.
-        # twinx is used so secondary curves remain visible even when the
-        # primary y-axis is zoomed in tightly around the main curve.
-        _sec_colors = {"R": MAIN_RED, "T": TRANS_BLUE, "A": ABS_GOLD}
-        _sec_ls     = {"R": "--",     "T": "--",        "A": ":"}
-        _sec_labels = {
-            "R": "R (反射率) [参考]",
-            "T": "T (透射率) [参考]",
-            "A": "A (吸收率) [参考]",
-        }
-        _sec_curves = [(k, {"R": r_vals, "T": t_vals, "A": a_vals}[k])
-                       for k in ("R", "T", "A") if k != main_kind]
-        _has_visible = any(float(np.max(np.abs(v))) > 0.005 for _, v in _sec_curves)
-        if _has_visible:
-            ax2_sec = ax2.twinx()
-            for _k, _v in _sec_curves:
-                _max_v = float(np.max(np.abs(_v)))
-                _alpha = 0.16 if _max_v < 0.02 else 0.30
-                ax2_sec.plot(
-                    wavelength_nm, _v,
-                    linewidth=0.85,
-                    alpha=_alpha,
-                    linestyle=_sec_ls[_k],
-                    color=_sec_colors[_k],
-                    label=_sec_labels[_k],
-                )
-            ax2_sec.set_ylim(-0.02, 1.08)
-            ax2_sec.set_ylabel("T / A  [参考]", fontsize=6.5, color="#aaaaaa")
-            ax2_sec.tick_params(axis="y", labelsize=5.5, colors="#cccccc")
-            for _sp, _obj in ax2_sec.spines.items():
-                if _sp == "right":
-                    _obj.set_linewidth(0.5)
-                    _obj.set_color("#dddddd")
-                else:
-                    _obj.set_visible(False)
-            ax2_sec.legend(
-                loc="upper left", fontsize=5.8, frameon=True,
-                facecolor="white", edgecolor="#eeeeee", framealpha=0.75,
-                borderpad=0.4, handlelength=1.4,
-            )
-
-        # Textbox overlay removed.
+        ax2.legend(loc="best", frameon=False)
         fig2.tight_layout()
         save_publication_figure(fig2, main_png_path)
         plt.close(fig2)
