@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -52,6 +53,7 @@ from thinfilm import education as thinfilm_education  # noqa: E402
 from thinfilm.plotting import add_panel_labels  # noqa: E402
 
 from .design_service import simulate_design  # noqa: E402
+from .ai_qa import AskResultRequest, prepare_result_request, stream_result_answer  # noqa: E402
 from .schemas import DesignSimulationRequest  # noqa: E402
 from .case_catalog_service import build_case_catalog, load_case_detail  # noqa: E402
 from .case_release import app_catalog  # noqa: E402
@@ -60,7 +62,12 @@ from .external_evidence_service import import_template, validate_comsol_csv  # n
 from .tmmcore_service import tmmcore_runtime_status, simulate_teaching_case_with_tmmcore  # noqa: E402
 from thinfilm.solvers import specialist_solver_status  # noqa: E402
 from thinfilm.solvers.rcwa_adapter import sweep_periodic_stack  # noqa: E402
-from thinfilm.solvers.generaltmm_adapter import multilayer_field_comparison, sweep_interface, sweep_multilayer  # noqa: E402
+from thinfilm.solvers.generaltmm_adapter import (  # noqa: E402
+    multilayer_field_comparison as native_field_comparison,
+    sweep_interface as native_sweep_interface,
+    sweep_multilayer as native_sweep_multilayer,
+)
+from . import packaged_tamm  # noqa: E402
 from thinfilm.solvers.wptherml_adapter import spectrum as wptherml_spectrum  # noqa: E402
 
 
@@ -419,12 +426,16 @@ def _output_url(path_value: str) -> str:
 
 def _optiland_configuration() -> tuple[Path, Path, Path]:
     """Resolve the optional Optiland checkout, Python runtime and experiment."""
+    project_checkout = PYTHINFILM_ROOT / "optiland"
+    local_checkout = (project_checkout / "optiland" / "__init__.py").is_file()
+    default_root = project_checkout if local_checkout else PYTHINFILM_ROOT.parent / "optiland"
     optiland_root = Path(
-        os.environ.get("THINFILM_OPTILAND_ROOT", str(PYTHINFILM_ROOT.parent / "optiland"))
+        os.environ.get("THINFILM_OPTILAND_ROOT", str(default_root))
     ).resolve()
     python_value = os.environ.get(
         "THINFILM_OPTILAND_PYTHON",
-        str(optiland_root / ".venv" / "Scripts" / "python.exe"),
+        sys.executable if local_checkout and optiland_root == project_checkout.resolve()
+        else str(optiland_root / ".venv" / "Scripts" / "python.exe"),
     )
     python_path = Path(python_value).resolve()
     script_path = PYTHINFILM_ROOT / "experiments" / "optiland_real_material_ar_comparison.py"
@@ -656,6 +667,17 @@ def run_rcwa_sweep(request: RcwaSweepRequest) -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
+def _generaltmm_call(method: str, **arguments: Any) -> dict[str, Any]:
+    if getattr(sys, "frozen", False):
+        return getattr(packaged_tamm, method)(**arguments)
+    native_methods = {
+        "sweep_multilayer": native_sweep_multilayer,
+        "multilayer_field_comparison": native_field_comparison,
+        "sweep_interface": native_sweep_interface,
+    }
+    return native_methods[method](**arguments)
+
+
 @app.post("/api/specialist/generaltmm")
 def run_generaltmm_sweep(request: GeneralTmmSweepRequest) -> dict[str, Any]:
     if request.wavelength_stop_nm <= request.wavelength_start_nm:
@@ -673,7 +695,7 @@ def run_generaltmm_sweep(request: GeneralTmmSweepRequest) -> dict[str, Any]:
             layers = [metal, *[layer for _ in range(request.dbr_periods) for layer in (high, low)], high]
             layer_indices = [complex(float(layer["n_real"]), float(layer.get("n_imag", 0.0))) for layer in layers]
             layer_thicknesses = [float(layer["thickness_nm"]) for layer in layers]
-            result = sweep_multilayer(
+            result = _generaltmm_call("sweep_multilayer",
                 wavelengths_nm=wavelengths,
                 n_incident=complex(float(source["ambient"]["n"])),
                 layer_indices=layer_indices,
@@ -689,7 +711,7 @@ def run_generaltmm_sweep(request: GeneralTmmSweepRequest) -> dict[str, Any]:
                 "beta": request.beta,
                 "polarization": request.polarization,
             }
-            result["field_comparison"] = multilayer_field_comparison(
+            result["field_comparison"] = _generaltmm_call("multilayer_field_comparison",
                 spectrum=result,
                 n_incident=complex(float(source["ambient"]["n"])),
                 layer_indices=layer_indices,
@@ -737,7 +759,7 @@ def run_generaltmm_sweep(request: GeneralTmmSweepRequest) -> dict[str, Any]:
                 betas = np.linspace(0.0, 0.95, 41).tolist()
                 center_nm = float((request.wavelength_start_nm + request.wavelength_stop_nm) / 2.0)
                 channel = "R" if request.polarization == "p" else "R_s"
-                scan_r = [sweep_multilayer(wavelengths_nm=[center_nm], n_incident=complex(float(source["ambient"]["n"])), layer_indices=layer_indices, layer_thickness_nm=layer_thicknesses, n_substrate=complex(float(source["substrate"]["n"])), beta=beta)[channel][0] for beta in betas]
+                scan_r = [_generaltmm_call("sweep_multilayer", wavelengths_nm=[center_nm], n_incident=complex(float(source["ambient"]["n"])), layer_indices=layer_indices, layer_thickness_nm=layer_thicknesses, n_substrate=complex(float(source["substrate"]["n"])), beta=beta)[channel][0] for beta in betas]
                 result["curves"] = [{"label": f"{request.polarization} 偏振 {center_nm:.0f} nm 角度窗口", "x": betas, "y": scan_r}]
                 result["x_label"], result["y_label"] = "归一化切向波矢 β", "反射率"
             suffix = "" if request.polarization == "p" else "_s"
@@ -757,7 +779,7 @@ def run_generaltmm_sweep(request: GeneralTmmSweepRequest) -> dict[str, Any]:
             if comparison_y is not None:
                 result["comparison_curve"] = {"label": comparison_label, "x": wavelengths, "y": comparison_y}
             return _jsonable(result)
-        return _jsonable(sweep_interface(wavelengths_nm=wavelengths, n_incident=request.n_incident, n_layer=request.n_layer, n_substrate=request.n_substrate, thickness_nm=request.thickness_nm, beta=request.beta))
+        return _jsonable(_generaltmm_call("sweep_interface", wavelengths_nm=wavelengths, n_incident=request.n_incident, n_layer=request.n_layer, n_substrate=request.n_substrate, thickness_nm=request.thickness_nm, beta=request.beta))
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -930,3 +952,9 @@ def run_design_simulation(request: DesignSimulationRequest) -> dict[str, Any]:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover - keeps desktop UI errors readable.
         raise HTTPException(status_code=500, detail=f"Design simulation failed: {exc}") from exc
+
+
+@app.post("/api/ai/ask-result")
+def run_ai_ask_result(request: AskResultRequest) -> StreamingResponse:
+    outgoing = prepare_result_request(request)
+    return StreamingResponse(stream_result_answer(outgoing), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

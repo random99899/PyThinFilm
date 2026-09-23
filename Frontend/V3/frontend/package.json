@@ -1,6 +1,6 @@
 {
   "name": "thinfilm-desktop-app",
-  "version": "0.1.0",
+  "version": "2.0.1",
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
@@ -12,6 +12,7 @@
     "build": "tsc --noEmit && vite build && tsc -p tsconfig.electron.json",
     "build:backend": "..\\.venv\\Scripts\\python.exe -m PyInstaller pythonfilm-backend.spec --clean --noconfirm --distpath backend-dist --workpath backend-build",
     "dist": "npm run build:backend && npm run build && electron-builder --win",
+    "dist:temporary-ai-key": "cross-env THINFILM_EMBED_AI_ENV=1 npm run dist",
     "preview": "vite preview --host 0.0.0.0"
   },
   "build": {
@@ -19,6 +20,7 @@
     "productName": "PythonFilm",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "asar": true,
+    "afterPack": "tools/embed-ai-env.cjs",
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
@@ -76,11 +78,16 @@
     "clsx": "^2.1.1",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
+    "katex": "^0.16.47",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.4",
     "recharts": "^3.9.2",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.180.0",

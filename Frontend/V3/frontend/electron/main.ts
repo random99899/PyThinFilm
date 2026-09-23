@@ -50,7 +50,7 @@ function startBackend(): void {
       THINFILM_NODE_EXECUTABLE: process.execPath,
       THINFILM_TMMCORE_BRIDGE: path.join(process.resourcesPath, "tmmcore", "tmmcore_bridge.mjs"),
       THINFILM_PYTHINFILM_ROOT: app.isPackaged ? backendCwd : path.resolve(repoRoot, "..", ".."),
-      THINFILM_OPTILAND_ROOT: backendCwd,
+      THINFILM_OPTILAND_ROOT: app.isPackaged ? path.join(backendCwd, "optiland") : path.resolve(repoRoot, "..", "..", "optiland"),
       THINFILM_OPTILAND_PYTHON: backendCommand,
     },
     windowsHide: true,
@@ -58,7 +58,7 @@ function startBackend(): void {
   });
 }
 
-function waitForBackend(timeoutMs = 45000): Promise<boolean> {
+function waitForBackend(timeoutMs = 120000): Promise<boolean> {
   const startedAt = Date.now();
 
   return new Promise((resolve) => {
@@ -118,7 +118,7 @@ app.whenReady().then(async () => {
   try {
     await checkBackendPort();
     startBackend();
-    if (!(await waitForBackend())) throw new Error("PythonFilm 后端未能在 45 秒内启动。请检查端口 8122 和安装文件。 ");
+    if (!(await waitForBackend())) throw new Error("PythonFilm 后端未能在 120 秒内启动。请检查端口 8122 和安装文件。 ");
   } catch (error) {
     dialog.showErrorBox("PythonFilm 无法启动", error instanceof Error ? error.message : String(error));
     app.quit();

@@ -42,6 +42,39 @@ npm run dev
 
 自由设计接口为 `POST /api/designs/simulate`。请求使用 `schema_version: "1.0"`，膜层按 `layers` 数组顺序计算。
 
+### 自由设计 AI 问答
+
+“分析结果”右上角的“问问本次结果”会将当前膜系、计算条件、指标与抽样光谱发送给后端，再由后端调用硅基流动 `deepseek-ai/DeepSeek-V4-Flash`。回复通过 SSE 流式展示，分别显示模型提供的思考内容与正式回答；回答支持 Markdown、表格和数学公式，可继续追问或停止生成。用户界面不提供 API Key 输入框。
+
+开发者编辑 `Frontend/V3/backend/.env`，填入自己的 Key：
+
+```dotenv
+SILICONFLOW_API_KEY=你的APIKey
+```
+
+随后启动 `npm run dev`。后端直接读取该文件，修改 Key 后下一次提问即生效。`.env` 已被 Git 忽略；未填写时，问答接口会给出“请联系 APP 管理员”的提示。后端环境变量 `SILICONFLOW_API_KEY` 如已设置，会优先于 `.env`。密钥不会由问答接口返回。
+
+### 小范围短期试用：临时内置 Key
+
+如果接受安装包内的 Key **可以被提取和在 APP 外使用**，先在上述 `.env` 中填写专用于试用的 Key，再在 `Frontend/V3/frontend` 执行：
+
+```powershell
+npm run dist:temporary-ai-key
+```
+
+该命令仅在 Electron 打包阶段把 `.env` 复制到安装包的 `resources/backend/.env`，不会写入源码或 Git；普通 `npm run dist` 不复制 `.env`。不要复用你其它项目的 Key。发布前核对硅基流动账户的余额、用量和可用限制，发布后按计划在控制台作废 Key。**一周后作废会让所有旧安装包的问答同时失效**；Key 能否被滥用取决于作废前的剩余额度与限制，APP 内限流无法约束提取 Key 后的直接调用。
+
+### 长期发布：服务端网关
+
+长期发布时，当前安装包仍在用户电脑上启动本地计算后端，问答建议另行部署你管理的轻量网关 `app.ai_gateway:app`，仅在服务端的 `backend/.env` 中填写 `SILICONFLOW_API_KEY`。例如在服务器的 `Frontend/V3/backend` 目录运行：
+
+```powershell
+$env:THINFILM_AI_DAILY_REQUEST_LIMIT = "500"
+..\.venv\Scripts\python.exe -m uvicorn app.ai_gateway:app --host 0.0.0.0 --port 8130
+```
+
+构建用户版前端前，将 `VITE_AI_API_BASE_URL` 设为这个网关的 HTTPS 地址，再运行 `npm run build`。网关设有每 IP 每分钟 12 次及每日总请求数上限；正式公网部署仍应在反向代理处配置访问控制，并在硅基流动侧设置费用上限。`DeepSeek-V4-Flash` 是计费模型，实际价格以硅基流动控制台为准。
+
 ### 双 TMM 后端（Step 1）
 
 统一设计接口支持可选字段：
@@ -76,7 +109,7 @@ Optiland 系统分析接口：
 - `GET /api/optiland/comparison`：首次访问时调用外部 Optiland 环境生成真实 MgF2/N-BK7 对照，之后读取缓存结果；前端工作区的“Optiland 系统分析”卡片会显示 2D/3D、Spot、PSF、MTF，平面膜的 R/T/A 仍由 PyThinFilm 膜系结果负责。
 - `POST /api/optiland/system`：接收当前自由膜系草稿，按材料、启用层序和厚度重建 Optiland 系统；前端面板展开后才调用，并在草稿变化后防抖刷新。
 - 案例带入自由设计时会携带 `system_template`；当前已实现 `single_lens_imaging` 基线和 `multi_element_imaging`（以及其手机/宽角变体）模板，其他模板安全回退到单透镜，避免在尚未验证时生成误导性系统图。
-- 默认查找 `../optiland/.venv/Scripts/python.exe` 和 `../optiland`；如路径不同，可设置 `THINFILM_OPTILAND_ROOT` 与 `THINFILM_OPTILAND_PYTHON`。
+- 源码开发版优先使用项目根目录 `optiland/` 和启动后端的 Python 环境（`Frontend/V3/.venv`）；若项目内无源码，则回退查找同级目录 `../optiland` 及其 `.venv`。也可通过 `THINFILM_OPTILAND_ROOT` 与 `THINFILM_OPTILAND_PYTHON` 显式指定。
 
 ## 验证
 

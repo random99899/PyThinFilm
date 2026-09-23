@@ -25,3 +25,16 @@ def test_optional_adapters_fail_explicitly_when_not_installed() -> None:
     if not status["wptherml"]["available"]:
         with pytest.raises(RuntimeError, match="WPTherml is not installed"):
             build_multilayer(materials=["Air", "SiO2", "Air"], thickness_m=[0, 100e-9, 0], wavelength_range_m=(400e-9, 800e-9, 10))
+
+
+def test_wptherml_uses_requested_wavelength_grid() -> None:
+    if not specialist_solver_status()["wptherml"]["available"]:
+        pytest.skip("WPTherml is optional")
+    model = build_multilayer(
+        materials=["Air", "SiO2", "Air"],
+        thickness_m=[0, 100e-9, 0],
+        wavelength_range_m=(400e-9, 800e-9, 4),
+    )
+    assert len(model.wavelength_array) == 4
+    assert model.wavelength_array[0] == pytest.approx(400e-9)
+    assert model.wavelength_array[-1] == pytest.approx(800e-9)

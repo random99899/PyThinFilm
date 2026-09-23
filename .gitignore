@@ -29,6 +29,8 @@ releases/
 node_modules/
 backend-dist/
 backend-build/
+backend-dist-*/
+backend-build-*/
 
 
 # Local runtime outputs (simulation results, generated figures, exports)

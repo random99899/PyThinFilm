@@ -21,7 +21,7 @@ def build_multilayer(*, materials: list[str], thickness_m: list[float], waveleng
     structure = {
         "material_list": materials,
         "thickness_list": thickness_m,
-        "lambda_list": list(wavelength_range_m),
+        "wavelength_list": list(wavelength_range_m),
         "temperature": float(temperature_k),
     }
     if cooling:

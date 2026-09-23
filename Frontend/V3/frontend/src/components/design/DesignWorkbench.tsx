@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Beaker, BookOpen, CheckCircle2, FlaskConical, Layers3, Loader2, Menu, RotateCcw, Wrench } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, Beaker, BookOpen, CheckCircle2, FlaskConical, Layers3, Loader2, Menu, RotateCcw, Sparkles, Wrench } from "lucide-react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
@@ -21,6 +21,8 @@ import { PowerSpectrumControls, formatPowerTick, powerAxisDomain, type PowerQuan
 import { OptilandPanel } from "@/components/optiland/OptilandPanel";
 import { LayerStructure3D } from "@/components/three/LayerStructure3D";
 import type { DesignDraft, DesignSimulationResult, ExperimentRecord, MaterialOption } from "@/types/design";
+
+const AskResultPanel = lazy(() => import("@/components/design/AskResultPanel").then((module) => ({ default: module.AskResultPanel })));
 
 const INITIAL_DESIGN: DesignDraft = {
   schema_version: "1.0",
@@ -93,6 +95,7 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
   const [selectedDesignId, setSelectedDesignId] = useState("");
   const [viewMode, setViewMode] = useState<"engineering" | "teaching">("engineering");
   const [analysisTab, setAnalysisTab] = useState("overview");
+  const [showAskResult, setShowAskResult] = useState(false);
   const [powerQuantity, setPowerQuantity] = useState<PowerQuantity>("R");
   const [inspectedMaterialId, setInspectedMaterialId] = useState("MgF2");
   const [showProjectSidebar, setShowProjectSidebar] = useState(false);
@@ -107,6 +110,16 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
   const projectMinSize = Math.max(18, 280 / panelWidth * 100);
   const stackMinSize = Math.max(24, 340 / panelWidth * 100);
   const selectedTask = EXPERIMENT_TASKS.find((task) => task.id === selectedTaskId) ?? EXPERIMENT_TASKS[0];
+  const resultMatchesDraft = Boolean(result &&
+    result.design.incident_material_id === draft.incident_material_id &&
+    result.design.substrate_material_id === draft.substrate_material_id &&
+    result.design.angle_deg === draft.angle_deg &&
+    result.design.polarization === draft.polarization &&
+    result.design.spectrum.start_nm === draft.spectrum.start_nm &&
+    result.design.spectrum.stop_nm === draft.spectrum.stop_nm &&
+    result.design.spectrum.points === draft.spectrum.points &&
+    result.design.layers.length === draft.layers.length &&
+    result.design.layers.every((layer, index) => layer.id === draft.layers[index]?.id && layer.material_id === draft.layers[index]?.material_id && layer.thickness_nm === draft.layers[index]?.thickness_nm && layer.enabled === draft.layers[index]?.enabled));
   const inspectedMaterial = materials.find((item) => item.material_id === inspectedMaterialId) ?? materials[0];
   const usedMaterialIds = useMemo(
     () => new Set([draft.incident_material_id, draft.substrate_material_id, ...draft.layers.filter((layer) => layer.enabled).map((layer) => layer.material_id)]),
@@ -299,7 +312,7 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
   }
 
   return (
-    <main ref={workbenchRef} className="flex h-screen min-h-0 flex-col bg-muted/30 text-foreground">
+    <main ref={workbenchRef} className="relative flex h-screen min-h-0 flex-col bg-muted/30 text-foreground">
       <header className="flex min-h-16 shrink-0 items-center justify-between gap-4 border-b bg-card/95 px-5 py-2 backdrop-blur">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground"><FlaskConical className="size-5" /></div>
@@ -405,7 +418,7 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
         <Panel id="analysis-panel" order={3} minSize={34}>
           <ScrollArea className="h-full">
             <section className="flex flex-col gap-4 p-5">
-              <div><h2 className="text-sm font-semibold">分析结果</h2><p className="text-xs text-muted-foreground">光谱、性能指标与物理解释</p></div>
+              <div className="flex items-center justify-between gap-3"><div><h2 className="text-sm font-semibold">分析结果</h2><p className="text-xs text-muted-foreground">光谱、性能指标与物理解释</p></div><Button type="button" size="sm" variant="outline" aria-label="问问本次结果" onClick={() => setShowAskResult(true)}><Sparkles className="size-4" />问问本次结果</Button></div>
               <OptilandPanel draft={draft} />
               <div className="flex items-center justify-between rounded-md border bg-card px-4 py-3 shadow-sm">
                 <div><h2 className="font-semibold">设计响应</h2></div>
@@ -469,6 +482,7 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
           </ScrollArea>
         </Panel>
       </PanelGroup>
+      {showAskResult ? <Suspense fallback={<div className="absolute inset-y-0 right-0 z-30 w-full max-w-[560px] border-l bg-background p-5 text-sm text-muted-foreground">正在打开问答…</div>}><AskResultPanel draft={draft} result={result} ready={Boolean(resultMatchesDraft && !loading && !error)} onClose={() => setShowAskResult(false)} /></Suspense> : null}
     </main>
   );
 }

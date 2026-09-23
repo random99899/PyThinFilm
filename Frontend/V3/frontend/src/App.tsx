@@ -1306,7 +1306,7 @@ function CaseWorkspace({ onOpenDesign }: { onOpenDesign: (draft?: DesignDraft) =
         requestSolver(body),
         settingsChanged ? requestSolver(baselineBody) : Promise.resolve(null),
       ]);
-      const payload = (await response.json()) as { detail?: string; wavelength_nm?: number[]; R?: number[]; T?: number[]; A?: number[]; curves?: SpecialistCurve[]; comparison_curve?: SpecialistCurve; x_label?: string; y_label?: string; field_comparison?: TammFieldComparison };
+      const payload = (await response.json()) as { detail?: string; solver?: string; wavelength_nm?: number[]; R?: number[]; T?: number[]; A?: number[]; curves?: SpecialistCurve[]; comparison_curve?: SpecialistCurve; x_label?: string; y_label?: string; field_comparison?: TammFieldComparison };
       if (!response.ok) throw new Error(payload.detail ?? `${isTamm ? "GeneralTmm" : "WPTherml"} 仿真失败：${response.status}`);
       const baselinePayload = baselineResponse ? (await baselineResponse.json()) as { detail?: string; comparison_curve?: SpecialistCurve } : null;
       if (baselineResponse && !baselineResponse.ok) throw new Error(baselinePayload?.detail ?? `基准方案计算失败：${baselineResponse.status}`);
@@ -1318,7 +1318,7 @@ function CaseWorkspace({ onOpenDesign }: { onOpenDesign: (draft?: DesignDraft) =
         title_en: selectedCase.title_en,
         design_type: isTamm ? "generaltmm" : "wptherml",
         summary: {
-          solver: isTamm ? "GeneralTmm" : "WPTherml",
+          solver: isTamm ? (payload.solver === "pythinfilm-isotropic-tmm" ? "PyThinFilm TMM" : "GeneralTmm") : "WPTherml",
           primary_curve: primaryLabel,
           curve_min: primaryValues.length ? Math.min(...primaryValues) : 0,
           curve_max: primaryValues.length ? Math.max(...primaryValues) : 0,
@@ -1594,7 +1594,7 @@ function CaseWorkspace({ onOpenDesign }: { onOpenDesign: (draft?: DesignDraft) =
                   开始 RCWA 仿真
                 </Button> : specialistCase ? <Button className="h-11" disabled={!selectedCase || running || transferring} onClick={() => void runRemainingSpecialistSimulation()}>
                   {running ? <Loader2 className="animate-spin" /> : <Play />}
-                  {tammCaseIds.includes(selectedCase?.case_id ?? "") ? "开始 GeneralTmm 仿真" : "开始 WPTherml 仿真"}
+                  {tammCaseIds.includes(selectedCase?.case_id ?? "") ? "开始 Tamm 仿真" : "开始 WPTherml 仿真"}
                 </Button> : selectedCase?.has_live_simulation !== false ? <Button className="h-11" disabled={!selectedCase || running || transferring} onClick={() => void runSimulation()}>
                   {running ? <Loader2 className="animate-spin" /> : <Play />}
                   开始仿真
