@@ -97,10 +97,15 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
   const [inspectedMaterialId, setInspectedMaterialId] = useState("MgF2");
   const [showProjectSidebar, setShowProjectSidebar] = useState(false);
   const [showStackSidebar, setShowStackSidebar] = useState(true);
+  const [workbenchWidth, setWorkbenchWidth] = useState(1000);
+  const workbenchRef = useRef<HTMLElement>(null);
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [comparisonQuantity, setComparisonQuantity] = useState<"R" | "T" | "A">("R");
   const [recordName, setRecordName] = useState("");
   const sequence = useRef(0);
+  const panelWidth = Math.max(workbenchWidth, 1000);
+  const projectMinSize = Math.max(18, 280 / panelWidth * 100);
+  const stackMinSize = Math.max(24, 340 / panelWidth * 100);
   const selectedTask = EXPERIMENT_TASKS.find((task) => task.id === selectedTaskId) ?? EXPERIMENT_TASKS[0];
   const inspectedMaterial = materials.find((item) => item.material_id === inspectedMaterialId) ?? materials[0];
   const usedMaterialIds = useMemo(
@@ -111,6 +116,14 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
     () => materials.filter((material) => usedMaterialIds.has(material.material_id) && (draft.spectrum.start_nm < material.lambda_min_nm || draft.spectrum.stop_nm > material.lambda_max_nm)),
     [draft.spectrum.start_nm, draft.spectrum.stop_nm, materials, usedMaterialIds],
   );
+
+  useEffect(() => {
+    const element = workbenchRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() => setWorkbenchWidth(element.clientWidth));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -286,7 +299,7 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
   }
 
   return (
-    <main className="flex h-screen min-h-0 flex-col bg-muted/30 text-foreground">
+    <main ref={workbenchRef} className="flex h-screen min-h-0 flex-col bg-muted/30 text-foreground">
       <header className="flex min-h-16 shrink-0 items-center justify-between gap-4 border-b bg-card/95 px-5 py-2 backdrop-blur">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground"><FlaskConical className="size-5" /></div>
@@ -323,8 +336,8 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
         ].map(([step, label, status]) => <div key={step} className="flex items-center gap-2 border-r px-4 py-2 last:border-r-0"><span className="font-semibold text-primary">{step}</span><span className="font-medium">{label}</span><span className="truncate text-muted-foreground">{status}</span></div>)}
       </div>
 
-      <PanelGroup direction="horizontal" className="min-h-0 flex-1">
-        {showProjectSidebar ? <><Panel defaultSize={24} minSize={18} maxSize={34} className="min-w-[280px] bg-background">
+      <PanelGroup direction="horizontal" className="min-h-0 min-w-[1000px] flex-1">
+        {showProjectSidebar ? <><Panel id="project-panel" order={1} defaultSize={Math.max(24, projectMinSize)} minSize={projectMinSize} maxSize={34} className="min-w-[280px] bg-background">
           <ScrollArea className="h-full border-r bg-card/45">
             <section className="flex flex-col gap-4 p-4">
               <div><h2 className="text-sm font-semibold">项目与材料</h2><p className="text-xs text-muted-foreground">定义任务、边界介质和材料数据</p></div>
@@ -372,8 +385,8 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
             </section>
           </ScrollArea>
         </Panel>
-        <PanelResizeHandle className="resize-handle" /></> : null}
-        {showStackSidebar ? <><Panel defaultSize={32} minSize={24} className="min-w-[340px] bg-background">
+        <PanelResizeHandle id="project-resize-handle" className="resize-handle" /></> : null}
+        {showStackSidebar ? <><Panel id="stack-panel" order={2} defaultSize={Math.max(32, stackMinSize)} minSize={stackMinSize} className="min-w-[340px] bg-background">
           <ScrollArea className="h-full border-r bg-card/30">
             <section className="flex flex-col gap-4 p-4">
               <div><h2 className="text-sm font-semibold">膜系建模</h2><p className="text-xs text-muted-foreground">按入射方向编辑层序并检查三维结构</p></div>
@@ -388,8 +401,8 @@ export function DesignWorkbench({ onOpenCases, initialDraft }: DesignWorkbenchPr
             </section>
           </ScrollArea>
         </Panel>
-        <PanelResizeHandle className="resize-handle" /></> : null}
-        <Panel minSize={34}>
+        <PanelResizeHandle id="stack-resize-handle" className="resize-handle" /></> : null}
+        <Panel id="analysis-panel" order={3} minSize={34}>
           <ScrollArea className="h-full">
             <section className="flex flex-col gap-4 p-5">
               <div><h2 className="text-sm font-semibold">分析结果</h2><p className="text-xs text-muted-foreground">光谱、性能指标与物理解释</p></div>
